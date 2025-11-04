@@ -52,7 +52,7 @@ npm run build
 
 4. Run tests:
 ```bash
-npx tsx test_noaa_api.ts
+npx tsx tests/test_noaa_api.ts
 ```
 
 ## Coding Standards
@@ -94,13 +94,21 @@ weather-mcp/
 ├── src/
 │   ├── index.ts           # Main MCP server
 │   ├── services/
-│   │   └── noaa.ts        # NOAA API service
+│   │   ├── noaa.ts        # NOAA API service
+│   │   └── openmeteo.ts   # Open-Meteo historical weather API service
 │   ├── types/
-│   │   └── noaa.ts        # TypeScript type definitions
+│   │   ├── noaa.ts        # NOAA TypeScript type definitions
+│   │   └── openmeteo.ts   # Open-Meteo TypeScript type definitions
 │   └── utils/
 │       └── units.ts       # Unit conversion utilities
-├── tests/                 # Test files (future)
-├── test_noaa_api.ts      # Manual test script
+├── tests/                 # Test files
+│   ├── test_noaa_api.ts   # NOAA API test script
+│   ├── test_openmeteo.ts  # Open-Meteo API test script
+│   └── test_historical_mcp.ts  # Historical weather MCP test
+├── docs/                  # Documentation
+│   ├── TESTING_GUIDE.md
+│   ├── NOAA_API_RESEARCH.md
+│   └── PROJECT_STATUS.md
 └── dist/                  # Compiled output (generated)
 ```
 
@@ -115,7 +123,7 @@ npm run build
 
 2. Test with the NOAA API:
 ```bash
-npx tsx test_noaa_api.ts
+npx tsx tests/test_noaa_api.ts
 ```
 
 3. Test manually with Claude Code (if possible)
@@ -123,8 +131,8 @@ npx tsx test_noaa_api.ts
 ### Adding Tests
 
 When adding new features:
-- Add test cases to `test_noaa_api.ts` for new service methods
-- Update `TESTING_GUIDE.md` with new manual test scenarios
+- Add test cases to `tests/test_noaa_api.ts` for new service methods
+- Update `docs/TESTING_GUIDE.md` with new manual test scenarios
 - Ensure all existing tests still pass
 
 ## Documentation
@@ -140,9 +148,9 @@ Update documentation when you:
 ### Which Files to Update
 
 - `README.md` - For user-facing changes
-- `TESTING_GUIDE.md` - For new test scenarios
-- `NOAA_API_RESEARCH.md` - For API discoveries
-- `IMPLEMENTATION_PLAN.md` - For tracking progress
+- `docs/TESTING_GUIDE.md` - For new test scenarios
+- `docs/NOAA_API_RESEARCH.md` - For API discoveries
+- `docs/PROJECT_STATUS.md` - For tracking progress
 - Code comments - For implementation details
 
 ## Commit Messages

@@ -9,7 +9,7 @@ This guide covers testing the Weather MCP Server.
 Run the test script to verify NOAA API is working:
 
 ```bash
-npx tsx test_noaa_api.ts
+npx tsx tests/test_noaa_api.ts
 ```
 
 This will test:
@@ -163,7 +163,7 @@ npm run dev
 - Check for port conflicts
 
 **NOAA API errors**:
-- Run `npx tsx test_noaa_api.ts` to verify API access
+- Run `npx tsx tests/test_noaa_api.ts` to verify API access
 - Check internet connection
 - Verify rate limits haven't been exceeded (wait 5 seconds and retry)
 

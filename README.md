@@ -178,14 +178,14 @@ If you get "No historical data available":
 
 Verify NOAA API connectivity:
 ```bash
-npx tsx test_noaa_api.ts
+npx tsx tests/test_noaa_api.ts
 ```
 
 This runs 5 tests covering all major functionality with real NOAA API calls.
 
 ### Manual Testing with Claude Code
 
-See [TESTING_GUIDE.md](./TESTING_GUIDE.md) for comprehensive testing instructions including:
+See [TESTING_GUIDE.md](./docs/TESTING_GUIDE.md) for comprehensive testing instructions including:
 - Setup steps
 - Test cases for all tools
 - Error handling verification
@@ -199,7 +199,7 @@ See [TESTING_GUIDE.md](./TESTING_GUIDE.md) for comprehensive testing instruction
 - `npm run build` - Compile TypeScript to JavaScript
 - `npm run dev` - Run the server in development mode with tsx
 - `npm start` - Run the compiled server
-- `npx tsx test_noaa_api.ts` - Run API connectivity tests
+- `npx tsx tests/test_noaa_api.ts` - Run API connectivity tests
 
 ### Project Structure
 
@@ -242,7 +242,7 @@ This server uses two weather APIs:
 - **Resolution**: 9-25km grid resolution from reanalysis models
 - **Delay**: 5-day delay for most recent data
 
-For more details on NOAA APIs, see [NOAA_API_RESEARCH.md](./NOAA_API_RESEARCH.md).
+For more details on NOAA APIs, see [NOAA_API_RESEARCH.md](./docs/NOAA_API_RESEARCH.md).
 
 ## Limitations
 
