@@ -7,6 +7,8 @@ An MCP (Model Context Protocol) server that provides weather data from NOAA's AP
 - **Get Forecast**: Retrieve weather forecasts for any US location (7-day forecast)
 - **Current Conditions**: Get real-time weather observations
 - **Historical Data**: Access historical weather observations for custom date ranges
+  - Recent data (last 7 days): Detailed hourly observations from real-time API
+  - Archival data (>7 days old): Daily summaries from NOAA Climate Data Online
 
 ## Installation
 
@@ -32,6 +34,27 @@ npm install
 npm run build
 ```
 
+4. (Optional) Configure CDO API token for archival data:
+
+To access historical weather data older than 7 days, you need a free NOAA Climate Data Online API token:
+
+- Request a token at: https://www.ncdc.noaa.gov/cdo-web/token
+- You'll receive the token via email (usually within minutes)
+
+**For local development and testing:**
+```bash
+# Copy the example file
+cp .env.example .env
+
+# Edit .env and add your token
+# NOAA_CDO_TOKEN=your_actual_token_here
+```
+
+**For use with Claude Code:**
+- Add the token as an environment variable in your MCP settings (see configuration examples below)
+
+**Note**: Without a CDO token, the server will still work for forecasts, current conditions, and recent historical data (last 7 days).
+
 ## Usage with Claude Code
 
 Add the server to your Claude Code MCP settings:
@@ -39,6 +62,7 @@ Add the server to your Claude Code MCP settings:
 ### macOS/Linux
 Edit `~/.config/claude-code/mcp_settings.json`:
 
+**Without CDO token** (forecasts, current conditions, and last 7 days of historical data):
 ```json
 {
   "mcpServers": {
@@ -50,15 +74,46 @@ Edit `~/.config/claude-code/mcp_settings.json`:
 }
 ```
 
+**With CDO token** (includes archival data older than 7 days):
+```json
+{
+  "mcpServers": {
+    "weather": {
+      "command": "node",
+      "args": ["/absolute/path/to/weather-mcp/dist/index.js"],
+      "env": {
+        "NOAA_CDO_TOKEN": "your_token_here"
+      }
+    }
+  }
+}
+```
+
 ### Windows
 Edit `%APPDATA%\claude-code\mcp_settings.json`:
 
+**Without CDO token**:
 ```json
 {
   "mcpServers": {
     "weather": {
       "command": "node",
       "args": ["C:\\absolute\\path\\to\\weather-mcp\\dist\\index.js"]
+    }
+  }
+}
+```
+
+**With CDO token**:
+```json
+{
+  "mcpServers": {
+    "weather": {
+      "command": "node",
+      "args": ["C:\\absolute\\path\\to\\weather-mcp\\dist\\index.js"],
+      "env": {
+        "NOAA_CDO_TOKEN": "your_token_here"
+      }
     }
   }
 }
@@ -121,9 +176,18 @@ Get historical weather observations for a location.
 - `end_date` (required): End date in ISO format (YYYY-MM-DD)
 - `limit` (optional): Max observations to return (1-500, default: 168)
 
-**Example:**
+**Data Source Selection:**
+- **Last 7 days**: Uses NOAA real-time API for detailed hourly observations (temperature, conditions, wind, etc.)
+- **Older than 7 days**: Automatically switches to Climate Data Online for daily summaries (high/low temps, precipitation, snowfall)
+  - Requires CDO API token (see Installation section)
+  - Returns daily summaries instead of hourly data
+
+**Examples:**
 ```
-Get historical weather data for Chicago from January 1-7, 2024 (latitude: 41.8781, longitude: -87.6298)
+Get recent weather: "What was the weather like in Chicago 3 days ago?" (latitude: 41.8781, longitude: -87.6298)
+```
+```
+Get archival weather: "What was the weather in New York on September 2, 2020?" (latitude: 40.7128, longitude: -74.0060)
 ```
 
 ## Testing
@@ -162,9 +226,11 @@ weather-mcp/
 ├── src/
 │   ├── index.ts           # Main MCP server
 │   ├── services/
-│   │   └── noaa.ts        # NOAA API service
+│   │   ├── noaa.ts        # NOAA real-time API service
+│   │   └── cdo.ts         # Climate Data Online API service
 │   ├── types/
-│   │   └── noaa.ts        # TypeScript type definitions
+│   │   ├── noaa.ts        # NOAA TypeScript type definitions
+│   │   └── cdo.ts         # CDO TypeScript type definitions
 │   └── utils/
 │       └── units.ts       # Unit conversion utilities
 ├── dist/                  # Compiled JavaScript (generated)
@@ -174,20 +240,37 @@ weather-mcp/
 
 ## API Information
 
-This server uses the NOAA Weather API:
+This server uses two NOAA APIs:
+
+### NOAA Weather API (Real-time)
 - **Base URL**: https://api.weather.gov
 - **Authentication**: None required (User-Agent header only)
 - **Rate Limits**: Enforced with 5-second retry window
 - **Coverage**: United States locations
+- **Use cases**: Forecasts, current conditions, recent observations (last 7 days)
+
+### Climate Data Online (CDO) API v2 (Archival)
+- **Base URL**: https://www.ncei.noaa.gov/cdo-web/api/v2
+- **Authentication**: Free API token required (get at https://www.ncdc.noaa.gov/cdo-web/token)
+- **Rate Limits**: 5 requests/second, 10,000 requests/day
+- **Coverage**: United States locations
+- **Use cases**: Historical daily summaries (older than 7 days)
+- **Data**: High/low temperatures, precipitation, snowfall
 
 For more details, see [NOAA_API_RESEARCH.md](./NOAA_API_RESEARCH.md).
 
 ## Limitations
 
-- NOAA API only covers United States locations
-- Historical data availability depends on weather station records
-- Observations may be delayed up to 20 minutes
-- Rate limits apply (typically retry after 5 seconds)
+- NOAA APIs only cover United States locations
+- Recent historical data (last 7 days): Hourly observations may have gaps depending on station
+- Archival historical data (>7 days):
+  - Requires free CDO API token
+  - Daily summaries only (no hourly detail)
+  - Data availability varies by location and date
+- Real-time observations may be delayed up to 20 minutes
+- Rate limits apply:
+  - Weather API: Automatic retry with exponential backoff
+  - CDO API: 5 requests/second, 10,000 requests/day
 
 ## License
 

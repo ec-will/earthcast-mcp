@@ -182,6 +182,22 @@ export class NOAAService {
     endTime?: Date,
     limit?: number
   ): Promise<ObservationCollectionResponse> {
+    // Validate date range if both dates are provided
+    if (startTime && endTime) {
+      if (startTime > endTime) {
+        throw new Error(`Invalid date range: start date (${startTime.toISOString()}) must be before end date (${endTime.toISOString()})`);
+      }
+    }
+
+    // Validate dates are not in the future
+    const now = new Date();
+    if (startTime && startTime > now) {
+      throw new Error(`Start date (${startTime.toISOString()}) cannot be in the future`);
+    }
+    if (endTime && endTime > now) {
+      throw new Error(`End date (${endTime.toISOString()}) cannot be in the future`);
+    }
+
     let url = `/stations/${stationId}/observations`;
 
     const params = new URLSearchParams();
@@ -192,7 +208,9 @@ export class NOAAService {
       params.append('end', endTime.toISOString());
     }
     if (limit) {
-      params.append('limit', Math.min(limit, 500).toString()); // Max 500
+      // Ensure limit is between 1 and 500
+      const validLimit = Math.max(1, Math.min(limit, 500));
+      params.append('limit', validLimit.toString());
     }
 
     if (params.toString()) {
@@ -237,6 +255,20 @@ export class NOAAService {
     endTime: Date,
     limit?: number
   ): Promise<ObservationCollectionResponse> {
+    // Validate date range
+    if (startTime > endTime) {
+      throw new Error(`Invalid date range: start date (${startTime.toISOString()}) must be before end date (${endTime.toISOString()})`);
+    }
+
+    // Validate dates are not in the future
+    const now = new Date();
+    if (startTime > now) {
+      throw new Error(`Start date (${startTime.toISOString()}) cannot be in the future`);
+    }
+    if (endTime > now) {
+      throw new Error(`End date (${endTime.toISOString()}) cannot be in the future`);
+    }
+
     const stations = await this.getStations(latitude, longitude);
 
     if (!stations.features || stations.features.length === 0) {
