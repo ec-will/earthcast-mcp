@@ -12,11 +12,29 @@ There are three main MCP registries:
 
 ## Prerequisites Completed ✅
 
-- [x] npm package published: `@dangahagan/weather-mcp`
+- [x] npm package published: `@dangahagan/weather-mcp` (v0.1.1 with mcpName field)
 - [x] GitHub repository public: https://github.com/dgahagan/weather-mcp
-- [x] GitHub release created: v0.1.0
-- [x] `smithery.yaml` configuration file added
-- [x] `server.json` configuration file added
+- [x] GitHub release created: v0.1.1
+- [x] `server.json` configuration file added (updated to 2025-10-17 schema)
+
+## Submission Status
+
+### ✅ GitHub MCP Registry (Official) - COMPLETED
+- **Status:** Successfully published
+- **Registry URL:** https://registry.modelcontextprotocol.io/v0/servers?search=io.github.dgahagan/weather-mcp
+- **Namespace:** `io.github.dgahagan/weather-mcp`
+- **Submitted:** November 5, 2025
+
+### ⏭️ Smithery.ai - SKIPPED
+- **Status:** Not submitted (intentionally skipped)
+- **Reason:** Smithery is designed for managed/hosted MCP servers with HTTP transport. This server uses **stdio transport** and is distributed as an npm package for local execution. Smithery's build system expects to containerize and host servers remotely, which is incompatible with stdio-based servers that run on users' local machines.
+- **Alternative:** Users can install directly from npm: `npm install -g @dangahagan/weather-mcp`
+
+### 🔄 Glama.ai - PENDING AUTO-INDEX
+- **Status:** Awaiting automatic indexing from GitHub MCP Registry
+- **Expected:** Should appear within 24-48 hours after official registry publication (submitted Nov 5, 2025)
+- **Manual Submission:** Not attempted - Glama also focuses on hosted/Docker servers. Will rely on automatic indexing from official registry.
+- **Check Status:** https://glama.ai/mcp/servers (search for "weather-mcp" or "@dangahagan")
 
 ---
 
@@ -78,13 +96,23 @@ Full guide: https://github.com/modelcontextprotocol/registry/blob/main/docs/guid
 
 **Website:** https://smithery.ai
 
-### Why Submit Here?
-- ✅ One-click installation for users
-- ✅ Auto-deployment from GitHub
-- ✅ Managed hosting options
-- ✅ Good discoverability
+### ⚠️ Not Suitable for This Server
 
-### Submission Process
+**This server was NOT submitted to Smithery.ai** for the following reasons:
+
+- **Transport Incompatibility:** This server uses **stdio transport** (local execution via npm), while Smithery is designed for **remote HTTP/SSE servers** that they can host and manage
+- **Build System Mismatch:** Smithery's build system expects to containerize and deploy servers as remote services, which doesn't align with stdio-based local execution
+- **Distribution Model:** Users install this server directly from npm (`npm install -g @dangahagan/weather-mcp`) rather than connecting to a hosted endpoint
+
+### When to Use Smithery
+
+Smithery is ideal for:
+- ✅ MCP servers with **HTTP or SSE transport**
+- ✅ Servers that need **managed hosting** and deployment
+- ✅ Remote services that clients connect to over the network
+- ❌ NOT for stdio-based local npm packages like this one
+
+### Original Submission Process (For Reference)
 
 #### Option 1: Local Distribution (Recommended for npm packages)
 
