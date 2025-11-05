@@ -35,3 +35,6 @@ coverage/
 # MCP Registry tokens and tools
 .mcpregistry_*
 mcp-publisher
+
+# Local MCP configuration
+.mcp.json

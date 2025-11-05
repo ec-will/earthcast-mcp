@@ -3,7 +3,7 @@
     "weather": {
       "command": "node",
       "args": [
-        "/home/dgahagan/work/personal/weather-mcp/dist/index.js"
+        "/absolute/path/to/weather-mcp/dist/index.js"
       ]
     }
   }
