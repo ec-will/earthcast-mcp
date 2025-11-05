@@ -16,12 +16,12 @@ You have two options for installing the Weather MCP Server:
 
 **No installation needed** - Use npx to run the server:
 ```bash
-npx -y weather-mcp
+npx -y @dangahagan/weather-mcp
 ```
 
 Or install globally:
 ```bash
-npm install -g weather-mcp
+npm install -g @dangahagan/weather-mcp
 ```
 
 ### Option 2: From Source
@@ -62,7 +62,7 @@ Then note the absolute path to your `weather-mcp/dist/index.js` file.
   "mcpServers": {
     "weather": {
       "command": "npx",
-      "args": ["-y", "weather-mcp"]
+      "args": ["-y", "@dangahagan/weather-mcp"]
     }
   }
 }
@@ -106,7 +106,7 @@ Then note the absolute path to your `weather-mcp/dist/index.js` file.
   "mcpServers": {
     "weather": {
       "command": "npx",
-      "args": ["-y", "weather-mcp"]
+      "args": ["-y", "@dangahagan/weather-mcp"]
     }
   }
 }

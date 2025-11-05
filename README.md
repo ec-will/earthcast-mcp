@@ -1,5 +1,8 @@
 # Weather MCP Server
 
+[![npm version](https://badge.fury.io/js/@dangahagan%2Fweather-mcp.svg)](https://www.npmjs.com/package/@dangahagan/weather-mcp)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+
 An MCP (Model Context Protocol) server that provides weather data to AI systems like Claude Code. Uses NOAA's API for US weather forecasts and current conditions, plus Open-Meteo for global historical weather data.
 
 **No API keys required!** Both NOAA and Open-Meteo APIs are free to use with no authentication needed.
@@ -20,12 +23,12 @@ An MCP (Model Context Protocol) server that provides weather data to AI systems 
 
 **Via npm:**
 ```bash
-npm install -g weather-mcp
+npm install -g @dangahagan/weather-mcp
 ```
 
 **Via npx (no installation):**
 ```bash
-npx -y weather-mcp
+npx -y @dangahagan/weather-mcp
 ```
 
 Then configure in your MCP client using:
@@ -34,7 +37,7 @@ Then configure in your MCP client using:
   "mcpServers": {
     "weather": {
       "command": "npx",
-      "args": ["-y", "weather-mcp"]
+      "args": ["-y", "@dangahagan/weather-mcp"]
     }
   }
 }
