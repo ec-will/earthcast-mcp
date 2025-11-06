@@ -331,11 +331,15 @@ Before each release:
 - [ ] README.md is up to date
 - [ ] CHANGELOG.md is updated
 - [ ] package.json version is incremented
+- [ ] server.json version is incremented
+- [ ] server.json description updated (if needed, ≤100 chars)
 - [ ] Code is committed and pushed to GitHub
 - [ ] Git tag created and pushed
 - [ ] GitHub release created
 - [ ] npm package published
-- [ ] Installation tested with `npx weather-mcp`
+- [ ] Official MCP Registry updated (`./mcp-publisher publish`)
+- [ ] Registry publication verified (check isLatest: true)
+- [ ] Installation tested with `npx @dangahagan/weather-mcp`
 - [ ] MCP client configuration tested
 
 ## Automation (Future Enhancement)
