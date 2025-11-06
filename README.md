@@ -359,19 +359,45 @@ Use the `check_service_status` tool to proactively verify API availability:
 
 ## Testing
 
-### Quick Test
+### Automated Test Suite
 
-Verify NOAA API connectivity:
+This project includes a comprehensive test suite with 247 automated tests:
+
+```bash
+# Run all tests
+npm test
+
+# Run tests with coverage report
+npm run test:coverage
+
+# Run tests in watch mode (during development)
+npm run test:watch
+
+# Run tests with interactive UI
+npm run test:ui
+```
+
+**Test Coverage:**
+- **247 tests** across unit and integration test suites
+- **100% coverage** on critical utilities (cache, validation, units, errors)
+- **54% overall coverage** with focus on reliability and security
+- All tests execute in ~1 second
+
+**Test Categories:**
+- **Unit Tests** (228 tests) - Cache, validation, units, errors, config, retry logic
+- **Integration Tests** (19 tests) - Error recovery scenarios, service status checks
+
+### Quick API Connectivity Test
+
+Verify NOAA API connectivity with a quick integration test:
 ```bash
 npx tsx tests/test_noaa_api.ts
 ```
 
-This runs 5 tests covering all major functionality with real NOAA API calls.
-
 ### Manual Testing with Claude Code
 
-See [TESTING_GUIDE.md](./docs/TESTING_GUIDE.md) for comprehensive testing instructions including:
-- Setup steps
+See [TESTING_GUIDE.md](./docs/TESTING_GUIDE.md) for comprehensive manual testing instructions including:
+- Setup steps for MCP clients
 - Test cases for all tools
 - Error handling verification
 - Performance testing
@@ -381,27 +407,56 @@ See [TESTING_GUIDE.md](./docs/TESTING_GUIDE.md) for comprehensive testing instru
 
 ### Available Scripts
 
+**Build & Run:**
 - `npm run build` - Compile TypeScript to JavaScript
 - `npm run dev` - Run the server in development mode with tsx
 - `npm start` - Run the compiled server
-- `npx tsx tests/test_noaa_api.ts` - Run API connectivity tests
+
+**Testing:**
+- `npm test` - Run all automated tests
+- `npm run test:coverage` - Run tests with coverage report
+- `npm run test:watch` - Run tests in watch mode
+- `npm run test:ui` - Run tests with interactive UI
+- `npx tsx tests/test_noaa_api.ts` - Quick API connectivity test
+
+**Security & Maintenance:**
+- `npm run audit` - Check for dependency vulnerabilities
+- `npm run audit:fix` - Automatically fix dependency vulnerabilities
 
 ### Project Structure
 
 ```
 weather-mcp/
 ├── src/
-│   ├── index.ts           # Main MCP server
+│   ├── index.ts                 # Main MCP server
+│   ├── config/
+│   │   ├── cache.ts             # Cache configuration and TTL strategies
+│   │   └── displayThresholds.ts # Display thresholds for weather conditions
+│   ├── errors/
+│   │   └── ApiError.ts          # Custom error class hierarchy
+│   ├── handlers/
+│   │   ├── alertsHandler.ts     # Weather alerts tool handler
+│   │   ├── currentConditionsHandler.ts  # Current conditions handler
+│   │   ├── forecastHandler.ts   # Forecast tool handler
+│   │   ├── historicalWeatherHandler.ts  # Historical weather handler
+│   │   └── statusHandler.ts     # Service status handler
 │   ├── services/
-│   │   ├── noaa.ts        # NOAA real-time API service
-│   │   └── openmeteo.ts   # Open-Meteo historical weather API service
+│   │   ├── noaa.ts              # NOAA API service
+│   │   └── openmeteo.ts         # Open-Meteo API service
 │   ├── types/
-│   │   ├── noaa.ts        # NOAA TypeScript type definitions
-│   │   └── openmeteo.ts   # Open-Meteo TypeScript type definitions
+│   │   ├── noaa.ts              # NOAA TypeScript type definitions
+│   │   └── openmeteo.ts         # Open-Meteo TypeScript type definitions
 │   └── utils/
-│       └── units.ts       # Unit conversion utilities
-├── dist/                  # Compiled JavaScript (generated)
-├── tests/                 # Test files
+│       ├── cache.ts             # LRU cache implementation
+│       ├── logger.ts            # Structured logging utilities
+│       ├── temperatureConversion.ts  # Temperature conversion helpers
+│       ├── units.ts             # Unit conversion utilities
+│       └── validation.ts        # Input validation functions
+├── tests/
+│   ├── unit/                    # Unit tests (228 tests)
+│   └── integration/             # Integration tests (19 tests)
+├── dist/                        # Compiled JavaScript (generated)
+├── docs/                        # Documentation
 └── package.json
 ```
 
@@ -468,6 +523,51 @@ For more details on NOAA APIs, see [NOAA_API_RESEARCH.md](./docs/NOAA_API_RESEAR
 - **For historical analysis**: Open-Meteo provides reliable global coverage back to 1940
 - **For international locations**: Only historical data (>7 days old) is supported
 
+## Security
+
+This project takes security seriously and implements multiple layers of protection:
+
+### Security Features
+
+**Input Validation:**
+- Comprehensive runtime validation for all user inputs
+- NaN and Infinity checks for numeric coordinates
+- Range validation for latitude (-90 to 90) and longitude (-180 to 180)
+- Type checking with TypeScript strict mode
+
+**Error Handling:**
+- Custom error class hierarchy with typed errors
+- Error message sanitization to prevent information leakage
+- Retryable errors clearly identified for graceful recovery
+- Network errors sanitized before display
+
+**Dependency Security:**
+- Automated dependency scanning via `npm audit`
+- GitHub Dependabot configured for weekly security updates
+- Minimal dependency footprint (3 runtime dependencies)
+- Zero known vulnerabilities in current dependencies
+
+**Reliability:**
+- Exponential backoff with jitter prevents thundering herd problems
+- Comprehensive test suite (247 tests) with 100% coverage on critical utilities
+- Memory-safe cache with automatic cleanup
+- Graceful shutdown handling
+
+### Security Audit
+
+The project has undergone a comprehensive security audit:
+- **Overall Security Posture:** B+ (Good)
+- **Risk Level:** LOW
+- **Vulnerabilities:** Zero critical or high-severity issues
+- See [SECURITY_AUDIT.md](./docs/development/SECURITY_AUDIT.md) for full audit report
+
+### Reporting Security Issues
+
+To report a security vulnerability, please see our [Security Policy](./SECURITY.md) which includes:
+- Vulnerability reporting procedures
+- Response timeline commitments (48hr acknowledgment, 7-day assessment)
+- Security best practices for users and developers
+
 ## License
 
 MIT
@@ -475,3 +575,8 @@ MIT
 ## Contributing
 
 Contributions are welcome! Please feel free to submit a Pull Request.
+
+For information about code quality, security considerations, and development best practices, see:
+- [CODE_REVIEW.md](./docs/development/CODE_REVIEW.md) - Comprehensive code quality analysis
+- [CONTRIBUTING.md](./CONTRIBUTING.md) - Contribution guidelines
+- [SECURITY.md](./SECURITY.md) - Security policy and vulnerability reporting

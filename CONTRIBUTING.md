@@ -189,7 +189,7 @@ fixed stuff
 (For maintainers)
 
 1. Update version in `package.json`
-2. Update `CHANGELOG.md` with changes
+2. Update `docs/releases/CHANGELOG.md` with changes
 3. Create a git tag: `git tag v1.0.0`
 4. Push tag: `git push origin v1.0.0`
 5. Create GitHub release with notes
