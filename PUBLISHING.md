@@ -175,27 +175,151 @@ npx weather-mcp@latest --help
 
 The README.md should be updated with npm installation instructions. See the changes in the next commit.
 
-## Step 4: Submit to MCP Registries (Optional)
+## Step 4: Update Official MCP Registry
 
-### GitHub MCP Registry
+The Official MCP Registry (https://registry.modelcontextprotocol.io) is the primary directory for MCP servers. Update it after each release.
 
-1. Add `mcpName` to package.json:
+### 4.1 Prerequisites
+
+1. **server.json file** - Must exist in project root (already done)
+2. **mcp-publisher tool** - CLI tool for publishing to the registry
+3. **GitHub authentication** - For `io.github.*` namespaces
+
+### 4.2 Install mcp-publisher (One-time Setup)
+
+**Option 1: Homebrew (macOS/Linux)**
+```bash
+brew install mcp-publisher
+```
+
+**Option 2: Download Binary**
+Download from https://github.com/modelcontextprotocol/registry/releases
+
+**Option 3: Build from Source**
+```bash
+git clone https://github.com/modelcontextprotocol/registry.git
+cd registry
+make publisher
+# Binary will be in ./bin/mcp-publisher
+```
+
+For this project, the `mcp-publisher` binary is already in the project root.
+
+### 4.3 Update server.json
+
+Update version and description in `server.json`:
+
 ```json
 {
-  "mcpName": "io.github.dgahagan/weather-mcp"
+  "$schema": "https://static.modelcontextprotocol.io/schemas/2025-10-17/server.schema.json",
+  "name": "io.github.dgahagan/weather-mcp",
+  "title": "Weather Data MCP Server",
+  "description": "Your description here (max 100 characters!)",
+  "version": "0.2.0",
+  "packages": [
+    {
+      "registryType": "npm",
+      "identifier": "@dangahagan/weather-mcp",
+      "version": "0.2.0",
+      "transport": {
+        "type": "stdio"
+      }
+    }
+  ],
+  "homepage": "https://github.com/dgahagan/weather-mcp",
+  "license": "MIT",
+  "categories": ["data", "utilities"],
+  "keywords": ["weather", "forecast", "noaa", "open-meteo"]
 }
 ```
 
-2. Follow submission guide: https://github.com/github/mcp-servers
+**Important:** Description must be ≤100 characters or publishing will fail.
 
-### Smithery.ai Registry
+### 4.4 Authenticate with GitHub (One-time)
+
+```bash
+# Using local binary
+./mcp-publisher login github
+
+# Using installed binary
+mcp-publisher login github
+```
+
+This will:
+1. Display a GitHub device code
+2. Open browser to https://github.com/login/device
+3. Prompt you to enter the code and authorize
+4. Save authentication credentials locally
+
+### 4.5 Publish to Registry
+
+```bash
+# Commit server.json changes first
+git add server.json
+git commit -m "Update server.json to v0.2.0 for MCP registry"
+git push origin main
+
+# Publish to registry
+./mcp-publisher publish
+```
+
+Expected output:
+```
+Publishing to https://registry.modelcontextprotocol.io...
+✓ Successfully published
+✓ Server io.github.dgahagan/weather-mcp version 0.2.0
+```
+
+### 4.6 Verify Publication
+
+Check the registry to confirm your update:
+
+```bash
+# Via curl
+curl "https://registry.modelcontextprotocol.io/v0/servers?search=io.github.dgahagan/weather-mcp"
+
+# Or visit in browser
+# https://registry.modelcontextprotocol.io/v0/servers?search=io.github.dgahagan/weather-mcp
+```
+
+You should see your new version marked as `"isLatest": true`.
+
+### 4.7 Common Issues
+
+**Error: "validation failed - description length"**
+- Description must be ≤100 characters
+- Shorten and try again
+
+**Error: "authentication required"**
+- Run `./mcp-publisher login github` first
+- Ensure GitHub account matches namespace (`io.github.dgahagan`)
+
+**Error: "version already exists"**
+- Each version can only be published once
+- Increment version in both `package.json` and `server.json`
+
+### 4.8 Registry Update Checklist
+
+For each release:
+
+- [ ] Update version in `package.json`
+- [ ] Update version in `server.json`
+- [ ] Update description in `server.json` (if needed, ≤100 chars)
+- [ ] Commit and push `server.json` changes
+- [ ] Authenticate with GitHub (if not already)
+- [ ] Run `./mcp-publisher publish`
+- [ ] Verify publication in registry
+
+### Additional Registries (Optional)
+
+#### Smithery.ai Registry
 
 1. Visit https://smithery.ai
 2. Click "Submit a server"
-3. Provide npm package name: `weather-mcp`
+3. Provide npm package name: `@dangahagan/weather-mcp`
 4. Fill out server details
 
-### Glama.ai Directory
+#### Glama.ai Directory
 
 1. Visit https://glama.ai/mcp/servers
 2. Submit your server with npm package link
