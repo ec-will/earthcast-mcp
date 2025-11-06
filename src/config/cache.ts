@@ -13,12 +13,56 @@ const MINUTE = 60 * 1000;
 const HOUR = 60 * MINUTE;
 const DAY = 24 * HOUR;
 
+/**
+ * Parse a boolean environment variable
+ * @param key Environment variable key
+ * @param defaultValue Default value if not set
+ * @returns Boolean value
+ */
+function getEnvBoolean(key: string, defaultValue: boolean): boolean {
+  const value = process.env[key];
+  if (value === undefined) return defaultValue;
+  return value !== 'false' && value !== '0';
+}
+
+/**
+ * Parse a number environment variable with validation
+ * @param key Environment variable key
+ * @param defaultValue Default value if not set or invalid
+ * @param min Minimum allowed value (optional)
+ * @param max Maximum allowed value (optional)
+ * @returns Validated number value
+ */
+function getEnvNumber(key: string, defaultValue: number, min?: number, max?: number): number {
+  const value = process.env[key];
+  if (value === undefined) return defaultValue;
+
+  const parsed = parseInt(value, 10);
+  if (isNaN(parsed)) {
+    console.warn(`Invalid ${key}: "${value}". Using default: ${defaultValue}`);
+    return defaultValue;
+  }
+
+  if (min !== undefined && parsed < min) {
+    console.warn(`${key} too low: ${parsed}. Using minimum: ${min}`);
+    return min;
+  }
+
+  if (max !== undefined && parsed > max) {
+    console.warn(`${key} too high: ${parsed}. Using maximum: ${max}`);
+    return max;
+  }
+
+  return parsed;
+}
+
 export const CacheConfig = {
   // Enable/disable caching globally
-  enabled: process.env.CACHE_ENABLED !== 'false', // Default: enabled
+  enabled: getEnvBoolean('CACHE_ENABLED', true),
 
   // Maximum number of entries in cache before LRU eviction
-  maxSize: parseInt(process.env.CACHE_MAX_SIZE || '1000', 10),
+  // Min: 100, Max: 10000, Default: 1000
+  maxSize: getEnvNumber('CACHE_MAX_SIZE', 1000, 100, 10000),
 
   // TTL values for different data types
   ttl: {
