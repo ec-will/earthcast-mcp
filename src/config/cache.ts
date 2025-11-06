@@ -38,6 +38,10 @@ export const CacheConfig = {
     // Observations typically update every 20-60 minutes
     currentConditions: 15 * MINUTE,
 
+    // Weather alerts
+    // Alerts can change rapidly, cache for shorter period
+    alerts: 5 * MINUTE,
+
     // Recent historical data (< 7 days old)
     // Recent data may still be updated/corrected
     recentHistorical: 1 * HOUR,

@@ -60,7 +60,7 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
     tools: [
       {
         name: 'get_forecast',
-        description: 'Get future weather forecast for a location (US only). Use this for upcoming weather predictions (e.g., "tomorrow", "this week", "next 7 days"). Returns forecast data including temperature, precipitation, wind, and conditions. For current weather, use get_current_conditions. For past weather, use get_historical_weather. If this tool returns an error, check the error message for status page links and consider using check_service_status to verify API availability.',
+        description: 'Get future weather forecast for a location (US only). Use this for upcoming weather predictions (e.g., "tomorrow", "this week", "next 7 days", "hourly forecast"). Returns forecast data including temperature, precipitation, wind, and conditions. Supports both daily and hourly granularity. For current weather, use get_current_conditions. For past weather, use get_historical_weather. If this tool returns an error, check the error message for status page links and consider using check_service_status to verify API availability.',
         inputSchema: {
           type: 'object',
           properties: {
@@ -82,6 +82,17 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
               minimum: 1,
               maximum: 7,
               default: 7
+            },
+            granularity: {
+              type: 'string',
+              description: 'Forecast granularity: "daily" for day/night periods or "hourly" for hour-by-hour detail (default: "daily")',
+              enum: ['daily', 'hourly'],
+              default: 'daily'
+            },
+            include_precipitation_probability: {
+              type: 'boolean',
+              description: 'Include precipitation probability in the forecast output (default: true)',
+              default: true
             }
           },
           required: ['latitude', 'longitude']
@@ -104,6 +115,33 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
               description: 'Longitude of the location (-180 to 180)',
               minimum: -180,
               maximum: 180
+            }
+          },
+          required: ['latitude', 'longitude']
+        }
+      },
+      {
+        name: 'get_alerts',
+        description: 'Get active weather alerts, watches, warnings, and advisories for a location (US only). Use this for safety-critical weather information when asked about "any alerts?", "weather warnings?", "is it safe?", "dangerous weather?", or "weather watches?". Returns severity, urgency, certainty, effective/expiration times, and affected areas. For forecast data, use get_forecast instead. If this tool returns an error, check the error message for status page links and consider using check_service_status to verify API availability.',
+        inputSchema: {
+          type: 'object',
+          properties: {
+            latitude: {
+              type: 'number',
+              description: 'Latitude of the location (-90 to 90)',
+              minimum: -90,
+              maximum: 90
+            },
+            longitude: {
+              type: 'number',
+              description: 'Longitude of the location (-180 to 180)',
+              minimum: -180,
+              maximum: 180
+            },
+            active_only: {
+              type: 'boolean',
+              description: 'Whether to show only active alerts (default: true)',
+              default: true
             }
           },
           required: ['latitude', 'longitude']
@@ -168,30 +206,73 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
   try {
     switch (name) {
       case 'get_forecast': {
-        const { latitude, longitude, days = 7 } = args as {
+        const {
+          latitude,
+          longitude,
+          days = 7,
+          granularity = 'daily',
+          include_precipitation_probability = true
+        } = args as {
           latitude: number;
           longitude: number;
           days?: number;
+          granularity?: 'daily' | 'hourly';
+          include_precipitation_probability?: boolean;
         };
 
-        // Get forecast data
-        const forecast = await noaaService.getForecastByCoordinates(latitude, longitude);
-        const periods = forecast.properties.periods.slice(0, days * 2); // Each day typically has 2 periods (day/night)
+        // Get forecast data based on granularity
+        const forecast = granularity === 'hourly'
+          ? await noaaService.getHourlyForecastByCoordinates(latitude, longitude)
+          : await noaaService.getForecastByCoordinates(latitude, longitude);
+
+        // Determine how many periods to show
+        let periods;
+        if (granularity === 'hourly') {
+          // For hourly, show up to days * 24 hours
+          periods = forecast.properties.periods.slice(0, days * 24);
+        } else {
+          // For daily, show up to days * 2 (day/night periods)
+          periods = forecast.properties.periods.slice(0, days * 2);
+        }
 
         // Format the forecast for display
-        let output = `# Weather Forecast\n\n`;
+        let output = `# Weather Forecast (${granularity === 'hourly' ? 'Hourly' : 'Daily'})\n\n`;
         output += `**Location:** ${forecast.properties.elevation.value}m elevation\n`;
-        output += `**Updated:** ${new Date(forecast.properties.updated).toLocaleString()}\n\n`;
+        output += `**Updated:** ${new Date(forecast.properties.updated).toLocaleString()}\n`;
+        output += `**Showing:** ${periods.length} ${granularity === 'hourly' ? 'hours' : 'periods'}\n\n`;
 
         for (const period of periods) {
           output += `## ${period.name}\n`;
-          output += `**Temperature:** ${period.temperature}°${period.temperatureUnit}\n`;
+          output += `**Temperature:** ${period.temperature}°${period.temperatureUnit}`;
+
+          // Add temperature trend if available
+          if (period.temperatureTrend) {
+            output += ` (${period.temperatureTrend})`;
+          }
+          output += `\n`;
+
+          // Add precipitation probability if requested and available
+          if (include_precipitation_probability && period.probabilityOfPrecipitation.value !== null) {
+            output += `**Precipitation Chance:** ${period.probabilityOfPrecipitation.value}%\n`;
+          }
+
           output += `**Wind:** ${period.windSpeed} ${period.windDirection}\n`;
+
+          // Add humidity if available (more common in hourly forecasts)
+          if (period.relativeHumidity.value !== null) {
+            output += `**Humidity:** ${period.relativeHumidity.value}%\n`;
+          }
+
           output += `**Forecast:** ${period.shortForecast}\n\n`;
-          if (period.detailedForecast) {
+
+          // For daily forecasts, include detailed forecast
+          if (granularity === 'daily' && period.detailedForecast) {
             output += `${period.detailedForecast}\n\n`;
           }
         }
+
+        output += `---\n`;
+        output += `*Data source: NOAA National Weather Service*\n`;
 
         return {
           content: [
@@ -213,33 +294,63 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         const observation = await noaaService.getCurrentConditions(latitude, longitude);
         const props = observation.properties;
 
+        // Helper function to convert temperature
+        const toFahrenheit = (value: number | null, unitCode: string): number | null => {
+          if (value === null) return null;
+          return unitCode.includes('degC') ? (value * 9/5) + 32 : value;
+        };
+
         // Format current conditions
         let output = `# Current Weather Conditions\n\n`;
         output += `**Station:** ${props.station}\n`;
         output += `**Time:** ${new Date(props.timestamp).toLocaleString()}\n\n`;
 
+        // Main conditions
         if (props.textDescription) {
           output += `**Conditions:** ${props.textDescription}\n`;
         }
 
-        if (props.temperature.value !== null) {
-          const tempF = props.temperature.unitCode.includes('degC')
-            ? (props.temperature.value * 9/5) + 32
-            : props.temperature.value;
+        // Temperature section
+        const tempF = toFahrenheit(props.temperature.value, props.temperature.unitCode);
+        if (tempF !== null) {
           output += `**Temperature:** ${Math.round(tempF)}°F\n`;
+
+          // Show heat index when temperature is high (>80°F) and heat index is available
+          const heatIndexF = toFahrenheit(props.heatIndex.value, props.heatIndex.unitCode);
+          if (heatIndexF !== null && tempF > 80 && heatIndexF > tempF) {
+            output += `**Feels Like (Heat Index):** ${Math.round(heatIndexF)}°F\n`;
+          }
+
+          // Show wind chill when temperature is low (<50°F) and wind chill is available
+          const windChillF = toFahrenheit(props.windChill.value, props.windChill.unitCode);
+          if (windChillF !== null && tempF < 50 && windChillF < tempF) {
+            output += `**Feels Like (Wind Chill):** ${Math.round(windChillF)}°F\n`;
+          }
+        }
+
+        // 24-hour temperature range
+        const max24F = toFahrenheit(props.maxTemperatureLast24Hours.value, props.maxTemperatureLast24Hours.unitCode);
+        const min24F = toFahrenheit(props.minTemperatureLast24Hours.value, props.minTemperatureLast24Hours.unitCode);
+        if (max24F !== null || min24F !== null) {
+          let range = `**24-Hour Range:**`;
+          if (max24F !== null) range += ` High ${Math.round(max24F)}°F`;
+          if (max24F !== null && min24F !== null) range += ` /`;
+          if (min24F !== null) range += ` Low ${Math.round(min24F)}°F`;
+          output += `${range}\n`;
         }
 
         if (props.dewpoint.value !== null) {
-          const dewF = props.dewpoint.unitCode.includes('degC')
-            ? (props.dewpoint.value * 9/5) + 32
-            : props.dewpoint.value;
-          output += `**Dewpoint:** ${Math.round(dewF)}°F\n`;
+          const dewF = toFahrenheit(props.dewpoint.value, props.dewpoint.unitCode);
+          if (dewF !== null) {
+            output += `**Dewpoint:** ${Math.round(dewF)}°F\n`;
+          }
         }
 
         if (props.relativeHumidity.value !== null) {
           output += `**Humidity:** ${Math.round(props.relativeHumidity.value)}%\n`;
         }
 
+        // Wind section
         if (props.windSpeed.value !== null) {
           const windMph = props.windSpeed.unitCode.includes('km_h')
             ? props.windSpeed.value * 0.621371
@@ -249,6 +360,16 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
           if (windDir !== null) {
             output += ` from ${Math.round(windDir)}°`;
           }
+
+          // Add wind gust if available and significant
+          if (props.windGust.value !== null) {
+            const gustMph = props.windGust.unitCode.includes('km_h')
+              ? props.windGust.value * 0.621371
+              : props.windGust.value * 2.23694;
+            if (gustMph > windMph * 1.2) { // Only show if gusts are 20% higher
+              output += `, gusting to ${Math.round(gustMph)} mph`;
+            }
+          }
           output += `\n`;
         }
 
@@ -257,10 +378,172 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
           output += `**Pressure:** ${pressureInHg.toFixed(2)} inHg\n`;
         }
 
+        // Enhanced visibility and cloud cover
         if (props.visibility.value !== null) {
           const visibilityMiles = props.visibility.value * 0.000621371;
-          output += `**Visibility:** ${visibilityMiles.toFixed(1)} miles\n`;
+          output += `**Visibility:** ${visibilityMiles.toFixed(1)} miles`;
+
+          // Add descriptive text for visibility
+          if (visibilityMiles < 0.25) {
+            output += ` (dense fog)`;
+          } else if (visibilityMiles < 1) {
+            output += ` (fog)`;
+          } else if (visibilityMiles < 3) {
+            output += ` (haze/mist)`;
+          } else if (visibilityMiles >= 10) {
+            output += ` (clear)`;
+          }
+          output += `\n`;
         }
+
+        // Cloud cover details
+        if (props.cloudLayers && props.cloudLayers.length > 0) {
+          const cloudDescriptions: { [key: string]: string } = {
+            'FEW': 'Few clouds',
+            'SCT': 'Scattered clouds',
+            'BKN': 'Broken clouds',
+            'OVC': 'Overcast',
+            'CLR': 'Clear',
+            'SKC': 'Sky clear'
+          };
+
+          const clouds = props.cloudLayers
+            .filter(layer => layer.amount)
+            .map(layer => {
+              const desc = cloudDescriptions[layer.amount] || layer.amount;
+              if (layer.base.value !== null) {
+                const heightFt = layer.base.unitCode.includes('m')
+                  ? layer.base.value * 3.28084
+                  : layer.base.value;
+                return `${desc} at ${Math.round(heightFt).toLocaleString()} ft`;
+              }
+              return desc;
+            });
+
+          if (clouds.length > 0) {
+            output += `**Cloud Cover:** ${clouds.join(', ')}\n`;
+          }
+        }
+
+        // Precipitation section
+        const precip1h = props.precipitationLastHour.value;
+        const precip3h = props.precipitationLast3Hours.value;
+        const precip6h = props.precipitationLast6Hours.value;
+
+        if (precip1h !== null || precip3h !== null || precip6h !== null) {
+          output += `\n## Recent Precipitation\n`;
+
+          if (precip1h !== null) {
+            const precipIn = props.precipitationLastHour.unitCode.includes('mm')
+              ? precip1h * 0.0393701
+              : precip1h;
+            output += `**Last Hour:** ${precipIn.toFixed(2)} inches\n`;
+          }
+
+          if (precip3h !== null) {
+            const precipIn = props.precipitationLast3Hours.unitCode.includes('mm')
+              ? precip3h * 0.0393701
+              : precip3h;
+            output += `**Last 3 Hours:** ${precipIn.toFixed(2)} inches\n`;
+          }
+
+          if (precip6h !== null) {
+            const precipIn = props.precipitationLast6Hours.unitCode.includes('mm')
+              ? precip6h * 0.0393701
+              : precip6h;
+            output += `**Last 6 Hours:** ${precipIn.toFixed(2)} inches\n`;
+          }
+        }
+
+        output += `\n---\n`;
+        output += `*Data source: NOAA National Weather Service*\n`;
+
+        return {
+          content: [
+            {
+              type: 'text',
+              text: output
+            }
+          ]
+        };
+      }
+
+      case 'get_alerts': {
+        const { latitude, longitude, active_only = true } = args as {
+          latitude: number;
+          longitude: number;
+          active_only?: boolean;
+        };
+
+        // Get alerts data
+        const alertsData = await noaaService.getAlerts(latitude, longitude, active_only);
+        const alerts = alertsData.features;
+
+        // Format the alerts for display
+        let output = `# Weather Alerts\n\n`;
+        output += `**Location:** ${latitude.toFixed(4)}, ${longitude.toFixed(4)}\n`;
+        output += `**Status:** ${active_only ? 'Active alerts only' : 'All alerts'}\n`;
+        if (alertsData.updated) {
+          output += `**Updated:** ${new Date(alertsData.updated).toLocaleString()}\n`;
+        }
+        output += `\n`;
+
+        if (alerts.length === 0) {
+          output += `✅ **No active weather alerts for this location.**\n\n`;
+          output += `The area is currently clear of weather warnings, watches, and advisories.\n`;
+        } else {
+          output += `⚠️ **${alerts.length} active alert${alerts.length > 1 ? 's' : ''} found**\n\n`;
+
+          // Sort alerts by severity (Extreme > Severe > Moderate > Minor > Unknown)
+          const severityOrder = { 'Extreme': 0, 'Severe': 1, 'Moderate': 2, 'Minor': 3, 'Unknown': 4 };
+          const sortedAlerts = alerts.sort((a, b) => {
+            const severityA = severityOrder[a.properties.severity] ?? 4;
+            const severityB = severityOrder[b.properties.severity] ?? 4;
+            return severityA - severityB;
+          });
+
+          for (const alert of sortedAlerts) {
+            const props = alert.properties;
+
+            // Severity emoji
+            const severityEmoji = props.severity === 'Extreme' ? '🔴' :
+                                  props.severity === 'Severe' ? '🟠' :
+                                  props.severity === 'Moderate' ? '🟡' :
+                                  props.severity === 'Minor' ? '🔵' : '⚪';
+
+            output += `${severityEmoji} **${props.event}**\n`;
+            output += `---\n`;
+
+            if (props.headline) {
+              output += `**${props.headline}**\n\n`;
+            }
+
+            output += `**Severity:** ${props.severity} | **Urgency:** ${props.urgency} | **Certainty:** ${props.certainty}\n`;
+            output += `**Area:** ${props.areaDesc}\n`;
+            output += `**Effective:** ${new Date(props.effective).toLocaleString()}\n`;
+            output += `**Expires:** ${new Date(props.expires).toLocaleString()}\n`;
+
+            if (props.onset && props.onset !== props.effective) {
+              output += `**Onset:** ${new Date(props.onset).toLocaleString()}\n`;
+            }
+
+            if (props.ends) {
+              output += `**Ends:** ${new Date(props.ends).toLocaleString()}\n`;
+            }
+
+            output += `\n**Description:**\n${props.description}\n`;
+
+            if (props.instruction) {
+              output += `\n**Instructions:**\n${props.instruction}\n`;
+            }
+
+            output += `\n**Recommended Response:** ${props.response}\n`;
+            output += `**Sender:** ${props.senderName}\n\n`;
+          }
+        }
+
+        output += `---\n`;
+        output += `*Data source: NOAA National Weather Service*\n`;
 
         return {
           content: [

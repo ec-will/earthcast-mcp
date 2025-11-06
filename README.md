@@ -12,8 +12,20 @@ An MCP (Model Context Protocol) server that provides weather data to AI systems 
 
 ## Features
 
+- **Weather Alerts**: Get active weather watches, warnings, and advisories for US locations (NEW in v0.3.0)
+  - Severity levels (Extreme, Severe, Moderate, Minor)
+  - Urgency and certainty indicators
+  - Effective and expiration times
+  - Instructions and recommended responses
 - **Get Forecast**: Retrieve weather forecasts for any US location (7-day forecast)
-- **Current Conditions**: Get real-time weather observations for US locations
+  - Daily or hourly granularity (NEW in v0.3.0)
+  - Precipitation probability display (NEW in v0.3.0)
+  - Temperature trends and humidity
+- **Current Conditions**: Get enhanced real-time weather observations for US locations
+  - Heat index and wind chill when relevant (NEW in v0.3.0)
+  - 24-hour temperature range (NEW in v0.3.0)
+  - Wind gusts and detailed cloud cover (NEW in v0.3.0)
+  - Recent precipitation history (NEW in v0.3.0)
 - **Historical Data**: Access historical weather observations for any location worldwide
   - Recent data (last 7 days): Detailed hourly observations from NOAA real-time API (US only)
   - Archival data (>7 days old): Hourly/daily weather data from 1940-present via Open-Meteo (global coverage)
@@ -36,6 +48,7 @@ The Weather MCP server includes an intelligent in-memory caching system that sig
 
 The cache automatically stores and retrieves weather data with intelligent expiration:
 
+- **Weather Alerts**: Cached for 5 minutes (alerts can change rapidly) - NEW in v0.3.0
 - **Forecasts**: Cached for 2 hours (updated approximately hourly)
 - **Current Conditions**: Cached for 15 minutes (observations update every 20-60 minutes)
 - **Historical Data (>1 day old)**: Cached indefinitely (finalized data never changes)

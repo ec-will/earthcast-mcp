@@ -9,6 +9,7 @@ import type {
   ObservationResponse,
   ObservationCollectionResponse,
   StationCollectionResponse,
+  AlertCollectionResponse,
   NOAAErrorResponse
 } from '../types/noaa.js';
 import { Cache } from '../utils/cache.js';
@@ -312,6 +313,16 @@ export class NOAAService {
   }
 
   /**
+   * Get hourly forecast for a location using lat/lon (convenience method)
+   * This combines getPointData and getHourlyForecast
+   */
+  async getHourlyForecastByCoordinates(latitude: number, longitude: number): Promise<ForecastResponse> {
+    const pointData = await this.getPointData(latitude, longitude);
+    const { gridId, gridX, gridY } = pointData.properties;
+    return this.getHourlyForecast(gridId, gridX, gridY);
+  }
+
+  /**
    * Get nearest observation stations for a location
    */
   async getStations(latitude: number, longitude: number): Promise<StationCollectionResponse> {
@@ -480,5 +491,58 @@ export class NOAAService {
     // Get observations from the nearest station
     const stationId = stations.features[0].properties.stationIdentifier;
     return this.getObservations(stationId, startTime, endTime, limit);
+  }
+
+  /**
+   * Get active weather alerts for a location
+   * @param latitude Latitude coordinate
+   * @param longitude Longitude coordinate
+   * @param activeOnly Whether to filter to only active alerts (default: true)
+   * @returns Collection of weather alerts
+   */
+  async getAlerts(
+    latitude: number,
+    longitude: number,
+    activeOnly: boolean = true
+  ): Promise<AlertCollectionResponse> {
+    // Validate coordinates
+    if (latitude < -90 || latitude > 90) {
+      throw new Error(`Invalid latitude: ${latitude}. Must be between -90 and 90.`);
+    }
+    if (longitude < -180 || longitude > 180) {
+      throw new Error(`Invalid longitude: ${longitude}. Must be between -180 and 180.`);
+    }
+
+    // Check cache first (if enabled)
+    if (CacheConfig.enabled) {
+      const cacheKey = Cache.generateKey(
+        'alerts',
+        latitude.toFixed(4),
+        longitude.toFixed(4),
+        activeOnly ? 'active' : 'all'
+      );
+      const cached = this.cache.get(cacheKey);
+      if (cached) {
+        return cached as AlertCollectionResponse;
+      }
+
+      // Query alerts using point parameter
+      const url = activeOnly
+        ? `/alerts/active?point=${latitude.toFixed(4)},${longitude.toFixed(4)}`
+        : `/alerts?point=${latitude.toFixed(4)},${longitude.toFixed(4)}`;
+
+      const result = await this.makeRequest<AlertCollectionResponse>(url);
+
+      // Cache with alerts TTL (5 minutes - alerts can change rapidly)
+      this.cache.set(cacheKey, result, CacheConfig.ttl.alerts);
+      return result;
+    }
+
+    // Query alerts using point parameter
+    const url = activeOnly
+      ? `/alerts/active?point=${latitude.toFixed(4)},${longitude.toFixed(4)}`
+      : `/alerts?point=${latitude.toFixed(4)},${longitude.toFixed(4)}`;
+
+    return this.makeRequest<AlertCollectionResponse>(url);
   }
 }

@@ -77,20 +77,103 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - NOAA API: Planned outages, service notices, issue reporting
 - Open-Meteo API: Production status, GitHub issues
 
+## [0.3.0] - TBD
+
+### Added
+
+#### New Tools
+- **Weather Alerts** - NEW `get_alerts` MCP tool for safety-critical weather information
+  - Active watches, warnings, and advisories for US locations
+  - Severity levels (Extreme, Severe, Moderate, Minor)
+  - Urgency and certainty indicators
+  - Effective and expiration times
+  - Affected areas and event types
+  - Instructions and recommended responses
+  - Automatic sorting by severity
+  - 5-minute cache TTL (alerts change rapidly)
+
+#### Enhanced get_forecast Tool
+- **Hourly Forecasts** - NEW `granularity` parameter
+  - Options: "daily" (default) or "hourly"
+  - Hourly provides up to 156 hours of detailed forecasts
+  - Daily maintains backward compatibility
+- **Precipitation Probability** - NEW `include_precipitation_probability` parameter
+  - Shows chance of rain/snow for each period
+  - Enabled by default
+  - Available in both daily and hourly forecasts
+- **Enhanced Output Formatting**
+  - Temperature trends when available
+  - Humidity display (especially in hourly forecasts)
+  - Clear granularity indication in headers
+
+#### Enhanced get_current_conditions Tool
+- **Feels-Like Temperature** - Intelligent display of comfort indices
+  - Heat Index shown when temperature >80°F
+  - Wind Chill shown when temperature <50°F
+  - Only displayed when significantly different from actual temperature
+- **24-Hour Temperature Range** - Historical context
+  - High temperature in last 24 hours
+  - Low temperature in last 24 hours
+  - Provides daily context for current conditions
+- **Wind Gusts** - Enhanced wind information
+  - Gust speed shown when 20%+ higher than sustained wind
+  - Helps identify potentially hazardous conditions
+- **Enhanced Visibility** - Descriptive categories
+  - Dense fog (<0.25 mi)
+  - Fog (0.25-1 mi)
+  - Haze/mist (1-3 mi)
+  - Clear (≥10 mi)
+- **Cloud Cover Details** - Detailed sky conditions
+  - Cloud layer heights in feet AGL
+  - Descriptive categories (Few, Scattered, Broken, Overcast)
+  - Multiple cloud layers displayed
+- **Recent Precipitation** - Historical precipitation data
+  - Last 1 hour accumulation
+  - Last 3 hours accumulation
+  - Last 6 hours accumulation
+  - Displayed in inches
+
+#### New Service Methods
+- `NOAAService.getAlerts()` - Fetch weather alerts for coordinates
+- `NOAAService.getHourlyForecastByCoordinates()` - Convenience method for hourly forecasts
+
+#### Testing
+- Comprehensive integration test suite for v0.3.0 features
+- Individual feature tests for alerts, forecasts, and conditions
+- Multi-location testing across different climates
+- Test coverage for all enhanced display logic
+
+### Changed
+- Updated tool descriptions to reflect new capabilities
+- Enhanced error messages for alerts endpoint
+- Improved output formatting consistency across all tools
+- Better handling of optional/missing data fields
+
+### Infrastructure
+- Added cache configuration for alerts (5-minute TTL)
+- Extended TypeScript types for alert responses
+- Improved null/undefined handling for optional fields
+
 ## [Unreleased]
 
 ### Planned
+- Location search by city name (geocoding)
+- Global forecast support (via Open-Meteo)
+- Extended forecast periods (up to 16 days)
+- Air quality data
+- Marine conditions
+- Fire weather indices
 - Automated testing suite
 - GitHub Actions for CI/CD
-- Additional weather data sources
-- Extended forecast periods
-- Weather alerts and warnings
-- Location search by city name
 
 ---
 
 ## Version History
 
+- **[0.3.0]** - TBD - Enhanced Core Tools (alerts, hourly forecasts, enhanced conditions)
+- **[0.2.0]** - 2025-11-05 - Added caching support
 - **[0.1.0]** - 2025-11-05 - Initial public release
 
+[0.3.0]: https://github.com/dgahagan/weather-mcp/releases/tag/v0.3.0
+[0.2.0]: https://github.com/dgahagan/weather-mcp/releases/tag/v0.2.0
 [0.1.0]: https://github.com/dgahagan/weather-mcp/releases/tag/v0.1.0

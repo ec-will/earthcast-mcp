@@ -26,11 +26,15 @@ This document outlines planned enhancements for future versions of the Weather M
 
 ## Version Planning
 
-### v0.3.0 - Enhanced Core Tools
+### v0.3.0 - Enhanced Core Tools ✅ COMPLETE
+
+**Status:** Implemented and tested on 2025-11-05
 
 **Theme:** Maximize existing tools, add critical safety feature
 
 **Goal:** Add substantial functionality without tool bloat
+
+**Achievement:** All features implemented successfully with 6/6 tests passing
 
 #### 1. Enhance `get_forecast` Tool (NO new tool)
 **Add parameters instead of creating separate tools:**
@@ -107,12 +111,13 @@ get_alerts({
 - Called in different contexts than forecast
 - High-priority queries that shouldn't be conflated
 
-**Summary for v0.3.0:**
-- **Tools added:** 1 (get_alerts)
-- **Tools enhanced:** 2 (get_forecast, get_current_conditions)
-- **Token cost:** ~300 tokens
-- **Effort:** ~1 week
-- **Value:** Safety + hourly forecasts + better current conditions
+**Summary for v0.3.0:** ✅ COMPLETE
+- **Tools added:** 1 (get_alerts) ✅
+- **Tools enhanced:** 2 (get_forecast, get_current_conditions) ✅
+- **Token cost:** ~300 tokens ✅
+- **Effort:** 1 day (2025-11-05) ✅
+- **Value:** Safety + hourly forecasts + better current conditions ✅
+- **Testing:** All 6 integration tests passing ✅
 
 ---
 
@@ -769,6 +774,56 @@ When implementing features from this roadmap:
 ---
 
 *Last Updated: 2025-11-05*
-*Current Version: v0.1.2 (with caching)*
-*Next Target: v0.3.0 - Enhanced Core Tools*
+*Current Version: v0.3.0 (Enhanced Core Tools)* ✅
+*Previous: v0.2.0 (with caching)*
+*Next Target: v0.4.0 - Global Expansion & Location Intelligence*
 *Design Philosophy: Lean, efficient, user-focused*
+
+---
+
+## ✅ v0.3.0 Status: COMPLETE
+
+All planned features have been implemented and tested:
+
+### Completed Features
+- ✅ **get_alerts tool** - NEW safety-critical weather warnings and advisories
+  - Severity levels (Extreme, Severe, Moderate, Minor)
+  - Urgency and certainty indicators
+  - Effective/expiration times and affected areas
+  - Automatic sorting by severity
+  - 5-minute cache TTL
+
+- ✅ **Enhanced get_forecast** - Hourly granularity and precipitation probability
+  - NEW `granularity` parameter: "daily" | "hourly"
+  - NEW `include_precipitation_probability` parameter (default: true)
+  - Hourly provides up to 156 hours of detailed forecasts
+  - Temperature trends and humidity display
+  - Backward compatible (daily is default)
+
+- ✅ **Enhanced get_current_conditions** - Comprehensive weather details
+  - Heat index when temperature >80°F (intelligent display)
+  - Wind chill when temperature <50°F (intelligent display)
+  - 24-hour temperature range (high/low)
+  - Wind gusts (shown when 20%+ higher than sustained)
+  - Enhanced visibility with descriptive categories
+  - Detailed cloud cover with heights and layers
+  - Recent precipitation history (1hr, 3hr, 6hr)
+
+### Testing
+- ✅ All integration tests passing (6/6)
+- ✅ Individual feature tests for alerts, forecasts, and conditions
+- ✅ Multi-location testing across different climates
+- ✅ Real data validation from NOAA APIs
+- ✅ TypeScript compilation with no errors
+
+### Documentation
+- ✅ CHANGELOG.md updated with v0.3.0 section
+- ✅ README.md updated with new features
+- ✅ Tool descriptions enhanced for AI understanding
+
+### Implementation Details
+- **Tools added:** 1 (get_alerts)
+- **Tools enhanced:** 2 (get_forecast, get_current_conditions)
+- **Token cost:** ~300 tokens (within budget)
+- **Backward compatibility:** Maintained ✅
+- **Completion date:** 2025-11-05

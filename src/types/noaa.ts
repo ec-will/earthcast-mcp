@@ -207,6 +207,61 @@ export interface NOAAErrorResponse {
 }
 
 /**
+ * Weather alert properties from /alerts endpoint
+ */
+export interface AlertProperties {
+  '@id': string;
+  '@type': string;
+  id: string;
+  areaDesc: string; // Affected area description
+  geocode: {
+    SAME?: string[]; // SAME (Specific Area Message Encoding) codes
+    UGC?: string[]; // Universal Geographic Code
+  };
+  affectedZones: string[]; // URLs to affected zones
+  references: Array<{
+    '@id': string;
+    identifier: string;
+    sender: string;
+    sent: string;
+  }>;
+  sent: string; // ISO 8601 datetime
+  effective: string; // ISO 8601 datetime
+  onset: string | null; // ISO 8601 datetime
+  expires: string; // ISO 8601 datetime
+  ends: string | null; // ISO 8601 datetime
+  status: 'Actual' | 'Exercise' | 'System' | 'Test' | 'Draft';
+  messageType: 'Alert' | 'Update' | 'Cancel' | 'Ack' | 'Error';
+  category: 'Met' | 'Geo' | 'Safety' | 'Security' | 'Rescue' | 'Fire' | 'Health' | 'Env' | 'Transport' | 'Infra' | 'CBRNE' | 'Other';
+  severity: 'Extreme' | 'Severe' | 'Moderate' | 'Minor' | 'Unknown';
+  certainty: 'Observed' | 'Likely' | 'Possible' | 'Unlikely' | 'Unknown';
+  urgency: 'Immediate' | 'Expected' | 'Future' | 'Past' | 'Unknown';
+  event: string; // Event type (e.g., "Tornado Warning", "Winter Storm Watch")
+  sender: string;
+  senderName: string;
+  headline: string | null;
+  description: string;
+  instruction: string | null;
+  response: 'Shelter' | 'Evacuate' | 'Prepare' | 'Execute' | 'Avoid' | 'Monitor' | 'Assess' | 'AllClear' | 'None';
+  parameters: {
+    [key: string]: string[];
+  };
+}
+
+export type AlertResponse = NOAAResponse<AlertProperties>;
+
+/**
+ * Collection of alerts from /alerts endpoint
+ */
+export interface AlertCollectionResponse {
+  '@context'?: unknown;
+  type: string;
+  features: AlertResponse[];
+  title?: string;
+  updated?: string;
+}
+
+/**
  * Helper type for converting units
  */
 export type TemperatureUnit = 'F' | 'C' | 'K';
