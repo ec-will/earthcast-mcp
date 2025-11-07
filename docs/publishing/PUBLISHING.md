@@ -7,13 +7,14 @@ This guide covers how to publish the Weather MCP Server to npm, create GitHub re
 For experienced users, here's the recommended publishing workflow:
 
 1. **Pre-release quality checks** → Run code-reviewer, security-auditor, and test-automator agents; fix all findings (see "Pre-Release Quality Automation")
-2. **Update versions** → Update `package.json` and `server.json` to new version
-3. **Commit & push** → Commit version updates to main branch
-4. **Build & test** → Run `npm run build` and `npm test`
-5. **Publish to npm** → Run `npm publish --access public`
-6. **Create GitHub release** → Use `gh release create` or web UI
-7. **Publish to MCP registry** → Run `./mcp-publisher login github` then `./mcp-publisher publish`
-8. **Verify** → Check npm, GitHub releases, and MCP registry
+2. **Pre-release documentation update** → Update all documentation for new version (see "Pre-Release Documentation Update")
+3. **Update versions** → Update `package.json` and `server.json` to new version
+4. **Commit & push** → Commit version updates to main branch
+5. **Build & test** → Run `npm run build` and `npm test`
+6. **Publish to npm** → Run `npm publish --access public`
+7. **Create GitHub release** → Use `gh release create` or web UI
+8. **Publish to MCP registry** → Run `./mcp-publisher login github` then `./mcp-publisher publish`
+9. **Verify** → Check npm, GitHub releases, MCP registry, and documentation consistency
 
 See detailed instructions below for each step.
 
@@ -45,6 +46,19 @@ Before you begin:
 - [ ] **Run test-automator agent** → Enhance test coverage, commit improvements
 - [ ] Verification passed: build succeeds, all tests pass, no critical vulnerabilities
 - [ ] All pre-release fixes committed (see "Pre-Release Quality Automation" for details)
+
+### Documentation Updates (see "Pre-Release Documentation Update")
+- [ ] **Run documentation version check** → `./scripts/check-doc-versions.sh`
+- [ ] **Update CHANGELOG.md** → Add new version entry with release notes
+- [ ] **Update README.md** → Update test counts, feature descriptions, remove outdated version references
+- [ ] **Update CLAUDE.md** → Update version, test count, project structure (if changed), last updated date
+- [ ] **Update docs/README.md** → Update version and test count
+- [ ] **Update SECURITY.md** → Update supported versions table
+- [ ] **Create TEST_COVERAGE_REPORT** → (if minor/major release) Document new test coverage
+- [ ] **Update CODE_REVIEW.md** → (if major release or significant changes) Reflect current code quality
+- [ ] **Update SECURITY_AUDIT.md** → (if major release or security changes) Reflect current security posture
+- [ ] **Re-run version check** → `./scripts/check-doc-versions.sh` should pass with 0 errors
+- [ ] All documentation updates committed
 
 ### Version Updates
 - [ ] **package.json** version incremented (e.g., 0.3.0 → 0.4.0)
@@ -182,11 +196,198 @@ You may skip this workflow if:
 
 ---
 
-**✅ Checkpoint:** Once all fixes are committed and verification passes, proceed to Step 0 (version bumping).
+**✅ Checkpoint:** Once all fixes are committed and verification passes, proceed to documentation updates.
 
 ---
 
-## Step 0: Update Version Numbers (Do This First!)
+## Pre-Release Documentation Update
+
+**⚠️ IMPORTANT: Update documentation BEFORE bumping version numbers**
+
+Keeping documentation synchronized with code changes ensures users always have accurate information. This workflow updates all documentation files to reflect the current state and prepares them for the new release.
+
+**Time estimate:** 30-45 minutes (or use Claude Code automation: 10-15 minutes)
+
+### Documentation Maintenance System
+
+This project uses a comprehensive documentation maintenance system with:
+- **Automated scripts** for version consistency checking
+- **Pre-written Claude Code prompts** for AI-assisted updates
+- **Detailed checklists** for manual updates
+
+**Full Documentation:** See [docs/development/DOCUMENTATION_MAINTENANCE.md](../development/DOCUMENTATION_MAINTENANCE.md) for complete guide.
+
+### Quick Documentation Update Workflow
+
+#### Option A: Automated (Recommended - Fastest)
+
+Use Claude Code to automate most documentation updates:
+
+**Prompt for Claude Code:**
+```
+I'm preparing to release version X.Y.Z of the Weather MCP Server. Please help me update all documentation according to the Version Update Checklist in docs/development/DOCUMENTATION_MAINTENANCE.md.
+
+Current state:
+- package.json version: [current version]
+- New version: X.Y.Z
+- Release date: [YYYY-MM-DD]
+- Test count: [run npm test and get count]
+
+Please:
+1. Update CHANGELOG.md with new version entry (move from [Unreleased] if exists)
+2. Update README.md test counts and remove outdated version references
+3. Update CLAUDE.md version, test count, and last updated date
+4. Update docs/README.md version and test count
+5. Update SECURITY.md supported versions table
+6. Update project structure in CLAUDE.md if new files were added
+7. Run ./scripts/check-doc-versions.sh and fix any errors
+8. Provide a summary of all changes made
+
+After completing, I'll review and commit the changes.
+```
+
+**See section "Claude Code Automation" in DOCUMENTATION_MAINTENANCE.md for 7 additional automation workflows.**
+
+#### Option B: Manual Update (Full Control)
+
+Follow the comprehensive checklist in DOCUMENTATION_MAINTENANCE.md:
+
+**Step 1: Run Version Check**
+```bash
+# Check current documentation consistency
+./scripts/check-doc-versions.sh
+```
+
+This will identify all version mismatches and issues.
+
+**Step 2: Update Core Documentation**
+
+1. **CHANGELOG.md** (5-10 minutes)
+   - Add new version section at top
+   - Move items from `[Unreleased]` section if present
+   - Update test count in release notes
+   - Add links section at bottom
+   - See DOCUMENTATION_MAINTENANCE.md Step 2 for details
+
+2. **README.md** (5-10 minutes)
+   - Update test count (search for "tests")
+   - Remove outdated version references ("NEW in vX.Y.Z" for old versions)
+   - Update feature descriptions if changed
+   - Verify all documentation links still exist
+   - See DOCUMENTATION_MAINTENANCE.md Step 3 for details
+
+3. **CLAUDE.md** (5 minutes)
+   - Update version (line ~10)
+   - Update test count (line ~375)
+   - Update project structure if new files added (lines 18-48)
+   - Update "Last Updated" date (line ~398)
+   - See DOCUMENTATION_MAINTENANCE.md Step 4 for details
+
+4. **docs/README.md** (2 minutes)
+   - Update "Current Version" (line ~59)
+   - Update "Test Coverage" (line ~61)
+   - See DOCUMENTATION_MAINTENANCE.md Step 5 for details
+
+5. **SECURITY.md** (2 minutes)
+   - Update "Supported Versions" table (lines 9-14)
+   - Add new version row with ✅
+   - Mark old versions appropriately
+   - See DOCUMENTATION_MAINTENANCE.md Step 6 for details
+
+**Step 3: Update Quality Documentation (if needed)**
+
+**For Major Releases or Significant Changes:**
+
+6. **TEST_COVERAGE_REPORT_V{X.Y}.md** (15-20 minutes)
+   - Run `npm run test:coverage`
+   - Create new report file
+   - Document test counts, coverage percentages
+   - List new tests added since last report
+   - See DOCUMENTATION_MAINTENANCE.md Step 7 for details
+
+7. **CODE_REVIEW.md** (30-60 minutes if doing manually)
+   - Update version references
+   - Re-assess code quality
+   - Update test counts
+   - Note improvements/regressions
+   - See DOCUMENTATION_MAINTENANCE.md Step 8 for details
+   - **Recommended:** Use Claude Code automation workflow instead
+
+8. **SECURITY_AUDIT.md** (30-60 minutes if doing manually)
+   - Run `npm audit`
+   - Re-assess security posture
+   - Update vulnerability count
+   - Document security improvements
+   - See DOCUMENTATION_MAINTENANCE.md Step 10 for details
+   - **Recommended:** Use Claude Code automation workflow instead
+
+**Step 4: Verify Updates**
+```bash
+# Re-run version check - should pass with 0 errors
+./scripts/check-doc-versions.sh
+
+# Verify test count matches
+npm test 2>&1 | grep "Tests"
+
+# Check for broken links
+grep -oE '\[.*\]\(\./[^)]+\.md\)' README.md | while read link; do
+  filepath=$(echo "$link" | sed -E 's/.*\(([^)]+)\).*/\1/' | sed 's/^.\///')
+  [ ! -f "$filepath" ] && echo "Broken: $filepath"
+done
+```
+
+**Step 5: Commit Documentation Updates**
+```bash
+git add CHANGELOG.md README.md CLAUDE.md docs/ SECURITY.md
+git commit -m "docs: update documentation for vX.Y.Z release
+
+- Update version numbers across all documentation
+- Update test counts (XXX tests)
+- Update CHANGELOG with vX.Y.Z release notes
+- Update SECURITY.md supported versions
+- Update CODE_REVIEW.md and SECURITY_AUDIT.md (if applicable)
+
+See docs/development/DOCUMENTATION_MAINTENANCE.md for full checklist."
+
+git push origin main
+```
+
+### When to Skip Documentation Updates
+
+You may skip full documentation workflow if:
+- This is a hotfix release (patch version only)
+- Documentation-only release (no code changes)
+- Last update was < 7 days ago with no changes
+
+**In all other cases, follow the full workflow.**
+
+### Troubleshooting
+
+**Problem:** Version check fails with errors
+- **Solution:** Review output, fix each error manually, re-run check
+
+**Problem:** Test count doesn't match README
+- **Solution:** Run `npm test`, update all test count references
+
+**Problem:** CHANGELOG has unreleased version entry
+- **Solution:** Ensure package.json version matches, or move entry to [Unreleased]
+
+**Problem:** Documentation changes are overwhelming
+- **Solution:** Use Claude Code automation (Option A) to handle routine updates
+
+### Reference Documentation
+
+- **Complete Guide:** [docs/development/DOCUMENTATION_MAINTENANCE.md](../development/DOCUMENTATION_MAINTENANCE.md)
+- **Quick Summary:** [docs/development/DOCUMENTATION_MAINTENANCE_SUMMARY.md](../development/DOCUMENTATION_MAINTENANCE_SUMMARY.md)
+- **Automation Scripts:** `scripts/check-doc-versions.sh`, `scripts/update-docs-for-release.sh`
+
+---
+
+**✅ Checkpoint:** Once all documentation is updated and committed, proceed to Step 0 (version bumping).
+
+---
+
+## Step 0: Update Version Numbers (After Documentation Updates!)
 
 **CRITICAL:** Before any publishing steps, update versions in BOTH files to match.
 
@@ -728,6 +929,29 @@ npx @dangahagan/weather-mcp@latest
    - "Get the forecast for Tokyo"
    - "Search for London coordinates"
 
+### Verify Documentation Consistency
+
+**Run final documentation check:**
+```bash
+# Verify all documentation is consistent with published version
+./scripts/check-doc-versions.sh
+
+# Should pass with 0 errors
+# ✅ All documentation checks passed!
+```
+
+**Check published documentation:**
+1. Visit https://github.com/dgahagan/weather-mcp/blob/main/README.md
+2. Verify version badges show correct version (if present)
+3. Verify test counts are accurate (446 tests)
+4. Verify all documentation links work
+5. Check CHANGELOG.md shows new release at top
+
+**If errors found:**
+- Fix immediately with hotfix documentation PR
+- Update live documentation on GitHub
+- Re-run `./scripts/check-doc-versions.sh` to verify
+
 ### Monitor
 
 After release, monitor:
@@ -736,6 +960,7 @@ After release, monitor:
 2. **GitHub issues** - Check for bug reports
 3. **MCP Registry** - Verify listing appears correctly
 4. **User feedback** - Discord, GitHub discussions, etc.
+5. **Documentation accuracy** - Watch for user confusion about features/versions
 
 ---
 
@@ -830,11 +1055,18 @@ See section 5.6 "Common Issues" above for detailed solutions.
 
 ## Getting Help
 
+**Publishing:**
 - **npm docs**: https://docs.npmjs.com/
 - **MCP docs**: https://modelcontextprotocol.io/
 - **MCP Registry**: https://github.com/modelcontextprotocol/registry
 - **Semantic versioning**: https://semver.org/
 - **GitHub CLI**: https://cli.github.com/manual/
+
+**Documentation:**
+- **Full Maintenance Guide**: [docs/development/DOCUMENTATION_MAINTENANCE.md](../development/DOCUMENTATION_MAINTENANCE.md)
+- **Quick Summary**: [docs/development/DOCUMENTATION_MAINTENANCE_SUMMARY.md](../development/DOCUMENTATION_MAINTENANCE_SUMMARY.md)
+- **Version Check Script**: `./scripts/check-doc-versions.sh`
+- **Release Update Script**: `./scripts/update-docs-for-release.sh`
 
 ---
 
@@ -843,17 +1075,24 @@ See section 5.6 "Common Issues" above for detailed solutions.
 The complete publishing workflow:
 
 1. ✅ **Pre-release quality checks** - Run code-reviewer, security-auditor, and test-automator agents; fix all findings (~30-60 min)
-2. ✅ Update `package.json` and `server.json` versions
-3. ✅ Commit and push version updates
-4. ✅ Build and test (`npm run build && npm test`)
-5. ✅ Publish to npm (`npm publish --access public`)
-6. ✅ Create GitHub release (`gh release create` or web UI)
-7. ✅ Publish to MCP Registry (`./mcp-publisher login github && ./mcp-publisher publish`)
-8. ✅ Verify all publications
-9. ✅ Test installation with npx
+2. ✅ **Pre-release documentation update** - Update all documentation for new version (~30-45 min, or 10-15 min with Claude Code automation)
+3. ✅ Update `package.json` and `server.json` versions
+4. ✅ Commit and push version updates
+5. ✅ Build and test (`npm run build && npm test`)
+6. ✅ Publish to npm (`npm publish --access public`)
+7. ✅ Create GitHub release (`gh release create` or web UI)
+8. ✅ Publish to MCP Registry (`./mcp-publisher login github && ./mcp-publisher publish`)
+9. ✅ Verify all publications and documentation consistency (`./scripts/check-doc-versions.sh`)
+10. ✅ Test installation with npx
 
 **Time estimate:**
-- First-time/major release: ~45-75 minutes (including pre-release quality workflow)
-- Minor/patch release: ~20-30 minutes (if minimal fixes needed from agents)
+- First-time/major release: ~75-120 minutes (including pre-release quality + documentation workflows)
+- Minor release: ~45-60 minutes (with Claude Code automation for documentation)
+- Patch release: ~20-30 minutes (if minimal documentation changes needed)
+
+**Documentation Resources:**
+- **Full Guide:** [docs/development/DOCUMENTATION_MAINTENANCE.md](../development/DOCUMENTATION_MAINTENANCE.md)
+- **Quick Summary:** [docs/development/DOCUMENTATION_MAINTENANCE_SUMMARY.md](../development/DOCUMENTATION_MAINTENANCE_SUMMARY.md)
+- **Scripts:** `./scripts/check-doc-versions.sh`, `./scripts/update-docs-for-release.sh`
 
 Happy publishing! 🚀
