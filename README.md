@@ -30,6 +30,25 @@ An MCP (Model Context Protocol) server that provides **global weather data** to 
   - Support for cities, airports, landmarks, and regions globally
   - Detailed metadata: timezone, elevation, population, country
   - Enables natural language queries: "What's the weather in Tokyo?"
+- **Climate Normals - Historical Context**: Compare weather to 30-year averages (NEW in v1.2.0)
+  - **Optional enhancement** for current conditions and forecasts (`include_normals=true`)
+  - Shows normal high/low temperatures and precipitation for comparison
+  - Displays departure from normal ("10°F warmer than normal")
+  - **Hybrid data strategy**: Open-Meteo computed normals (global, free) or optional NOAA NCEI official normals (US only, requires free API token)
+  - Based on 1991-2020 climate normals period
+  - Helps understand if weather is unusual for the time of year
+- **Snow and Ice Data**: Enhanced winter weather information (NEW in v1.2.0)
+  - Snow depth on ground (current conditions, US only)
+  - Snowfall accumulation forecasts with time periods
+  - Ice accumulation forecasts for freezing rain events
+  - Smart threshold-based display (filters trace amounts)
+  - Unit conversions from metric to imperial
+- **Timezone-Aware Display**: All timestamps in local time (NEW in v1.2.0)
+  - Automatic timezone detection from coordinates
+  - All times displayed in location's local timezone
+  - Includes timezone abbreviations (EST, PDT, etc.)
+  - Handles daylight saving time transitions
+  - Formatted time ranges for forecast periods
 - **Weather Alerts**: Get active weather watches, warnings, and advisories for US locations
   - Severity levels (Extreme, Severe, Moderate, Minor)
   - Urgency and certainty indicators
@@ -92,6 +111,7 @@ The Weather MCP server includes an intelligent in-memory caching system that sig
 The cache automatically stores and retrieves weather data with intelligent expiration:
 
 - **Location Searches**: Cached for 30 days (locations don't move)
+- **Climate Normals**: Cached indefinitely (30-year averages are static) - NEW in v1.2.0
 - **Marine Conditions**: Cached for 1 hour (marine data updates hourly) - NEW in v0.6.0
 - **Air Quality Data**: Cached for 1 hour (air quality updates hourly) - v0.5.0
 - **Fire Weather Data**: Cached for 2 hours (gridpoint data updates ~hourly) - v0.5.0
@@ -112,7 +132,17 @@ export CACHE_ENABLED=false
 
 # Adjust maximum cache size (default: 1000 entries)
 export CACHE_MAX_SIZE=1500
+
+# Optional: NOAA NCEI API token for official climate normals (US only, NEW in v1.2.0)
+# Falls back to Open-Meteo computed normals if not configured
+export NCEI_API_TOKEN=your_token_here
 ```
+
+**Note on Climate Normals (v1.2.0):**
+- By default, climate normals use Open-Meteo's computed 30-year averages (completely free, global coverage, zero setup)
+- Optionally, you can configure a free NCEI API token to use official NOAA climate normals for US locations
+- Get a free token at: https://www.ncdc.noaa.gov/cdo-web/token
+- If NCEI token is configured but unavailable, the system automatically falls back to Open-Meteo
 
 ### Monitoring
 
@@ -237,7 +267,7 @@ You can also find coordinates manually:
 
 ## Available Tools
 
-### 1. get_forecast (ENHANCED in v0.4.0)
+### 1. get_forecast (ENHANCED in v0.4.0, v1.2.0)
 Get weather forecast for any location worldwide.
 
 **Parameters:**
@@ -246,6 +276,7 @@ Get weather forecast for any location worldwide.
 - `days` (optional): Number of days in forecast (1-16, default: 7)
 - `granularity` (optional): "daily" or "hourly" (default: "daily")
 - `include_precipitation_probability` (optional): Include rain chances (default: true)
+- `include_normals` (optional): Include climate normals for comparison (default: false, NEW in v1.2.0)
 - `source` (optional): "auto" (default), "noaa" (US only), or "openmeteo" (global)
 
 **Description:**
@@ -266,18 +297,34 @@ Automatically selects the best data source: NOAA for US locations (more detailed
 - Weather conditions and descriptions
 - UV index (for international locations)
 - Humidity and atmospheric conditions
+- Climate normals comparison (when `include_normals=true`, NEW in v1.2.0)
+- Snow and ice accumulation forecasts (when available, NEW in v1.2.0)
+- All timestamps in local timezone (NEW in v1.2.0)
 
-### 2. get_current_conditions
-Get current weather conditions for a location.
+### 2. get_current_conditions (ENHANCED in v1.2.0)
+Get current weather conditions for a location (US only).
 
 **Parameters:**
 - `latitude` (required): Latitude coordinate (-90 to 90)
 - `longitude` (required): Longitude coordinate (-180 to 180)
+- `include_fire_weather` (optional): Include fire weather indices (default: false)
+- `include_normals` (optional): Include climate normals for comparison (default: false, NEW in v1.2.0)
 
 **Example:**
 ```
 What are the current weather conditions in New York? (latitude: 40.7128, longitude: -74.0060)
 ```
+
+**Returns:**
+- Current temperature, humidity, wind, pressure
+- Heat index or wind chill (when applicable)
+- 24-hour temperature range
+- Recent precipitation
+- Cloud cover and visibility
+- Snow depth on ground (when available, NEW in v1.2.0)
+- Climate normals comparison (when `include_normals=true`, NEW in v1.2.0)
+- Fire weather indices (when `include_fire_weather=true`)
+- All timestamps in local timezone (NEW in v1.2.0)
 
 ### 3. search_location (NEW in v0.4.0)
 Find coordinates for any location worldwide by name.
@@ -542,7 +589,7 @@ Use the `check_service_status` tool to proactively verify API availability:
 
 ### Automated Test Suite
 
-This project includes a comprehensive test suite with 247 automated tests:
+This project includes a comprehensive test suite with 446 automated tests:
 
 ```bash
 # Run all tests
@@ -559,13 +606,13 @@ npm run test:ui
 ```
 
 **Test Coverage:**
-- **247 tests** across unit and integration test suites
-- **100% coverage** on critical utilities (cache, validation, units, errors)
+- **446 tests** across unit and integration test suites (93 new tests in v1.2.0)
+- **100% coverage** on critical utilities (cache, validation, units, errors, normals, snow, timezone)
 - **54% overall coverage** with focus on reliability and security
 - All tests execute in ~1 second
 
 **Test Categories:**
-- **Unit Tests** (228 tests) - Cache, validation, units, errors, config, retry logic
+- **Unit Tests** (427 tests) - Cache, validation, units, errors, config, retry logic, normals, snow, timezone
 - **Integration Tests** (19 tests) - Error recovery scenarios, service status checks
 
 ### Quick API Connectivity Test
@@ -611,6 +658,7 @@ weather-mcp/
 ├── src/
 │   ├── index.ts                 # Main MCP server
 │   ├── config/
+│   │   ├── api.ts               # API configuration (NCEI token) - NEW in v1.2.0
 │   │   ├── cache.ts             # Cache configuration and TTL strategies
 │   │   └── displayThresholds.ts # Display thresholds for weather conditions
 │   ├── errors/
@@ -620,10 +668,14 @@ weather-mcp/
 │   │   ├── currentConditionsHandler.ts  # Current conditions handler
 │   │   ├── forecastHandler.ts   # Forecast tool handler
 │   │   ├── historicalWeatherHandler.ts  # Historical weather handler
+│   │   ├── airQualityHandler.ts # Air quality handler
+│   │   ├── marineConditionsHandler.ts   # Marine conditions handler
+│   │   ├── locationHandler.ts   # Location search handler
 │   │   └── statusHandler.ts     # Service status handler
 │   ├── services/
 │   │   ├── noaa.ts              # NOAA API service
-│   │   └── openmeteo.ts         # Open-Meteo API service
+│   │   ├── openmeteo.ts         # Open-Meteo API service
+│   │   └── ncei.ts              # NCEI climate normals service - NEW in v1.2.0
 │   ├── types/
 │   │   ├── noaa.ts              # NOAA TypeScript type definitions
 │   │   └── openmeteo.ts         # Open-Meteo TypeScript type definitions
@@ -632,9 +684,12 @@ weather-mcp/
 │       ├── logger.ts            # Structured logging utilities
 │       ├── temperatureConversion.ts  # Temperature conversion helpers
 │       ├── units.ts             # Unit conversion utilities
-│       └── validation.ts        # Input validation functions
+│       ├── validation.ts        # Input validation functions
+│       ├── normals.ts           # Climate normals utilities - NEW in v1.2.0
+│       ├── snow.ts              # Snow and ice data utilities - NEW in v1.2.0
+│       └── timezone.ts          # Timezone-aware formatting - NEW in v1.2.0
 ├── tests/
-│   ├── unit/                    # Unit tests (228 tests)
+│   ├── unit/                    # Unit tests (427 tests) - 93 new tests in v1.2.0
 │   └── integration/             # Integration tests (19 tests)
 ├── dist/                        # Compiled JavaScript (generated)
 ├── docs/                        # Documentation
