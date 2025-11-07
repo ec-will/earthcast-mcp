@@ -16,6 +16,7 @@ import {
 } from '@modelcontextprotocol/sdk/types.js';
 import { NOAAService } from './services/noaa.js';
 import { OpenMeteoService } from './services/openmeteo.js';
+import { NCEIService } from './services/ncei.js';
 import { CacheConfig } from './config/cache.js';
 import { logger } from './utils/logger.js';
 import { formatErrorForUser } from './errors/ApiError.js';
@@ -57,6 +58,13 @@ const noaaService = new NOAAService({
  * No API key required - free for non-commercial use
  */
 const openMeteoService = new OpenMeteoService();
+
+/**
+ * Initialize the NCEI service for climate normals (optional)
+ * Requires free API token from https://www.ncdc.noaa.gov/cdo-web/token
+ * Falls back to Open-Meteo computed normals if not configured
+ */
+const nceiService = new NCEIService();
 
 /**
  * Create MCP server instance
@@ -151,6 +159,11 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
             include_fire_weather: {
               type: 'boolean',
               description: 'Include fire weather indices (Haines Index, Grassland Fire Danger, Red Flag Threat) in the response (default: false, US only)',
+              default: false
+            },
+            include_normals: {
+              type: 'boolean',
+              description: 'Include climate normals (30-year averages) for comparison with current conditions (default: false). Shows normal high/low temperatures and precipitation, with departure from normal.',
               default: false
             }
           },
@@ -321,7 +334,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         return await handleGetForecast(args, noaaService, openMeteoService);
 
       case 'get_current_conditions':
-        return await handleGetCurrentConditions(args, noaaService);
+        return await handleGetCurrentConditions(args, noaaService, openMeteoService, nceiService);
 
       case 'get_alerts':
         return await handleGetAlerts(args, noaaService);

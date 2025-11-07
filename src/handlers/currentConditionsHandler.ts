@@ -3,6 +3,8 @@
  */
 
 import { NOAAService } from '../services/noaa.js';
+import { OpenMeteoService } from '../services/openmeteo.js';
+import { NCEIService } from '../services/ncei.js';
 import { validateCoordinates, validateOptionalBoolean } from '../utils/validation.js';
 import { convertToFahrenheit } from '../utils/temperatureConversion.js';
 import { DisplayThresholds } from '../config/displayThresholds.js';
@@ -16,22 +18,31 @@ import {
 } from '../utils/fireWeather.js';
 import { extractSnowDepth, formatSnowData, hasWinterWeather } from '../utils/snow.js';
 import { formatInTimezone, guessTimezoneFromCoords } from '../utils/timezone.js';
+import { getClimateNormals, formatNormals, getDateComponents } from '../utils/normals.js';
 
 interface CurrentConditionsArgs {
   latitude?: number;
   longitude?: number;
   include_fire_weather?: boolean;
+  include_normals?: boolean;
 }
 
 export async function handleGetCurrentConditions(
   args: unknown,
-  noaaService: NOAAService
+  noaaService: NOAAService,
+  openMeteoService: OpenMeteoService,
+  nceiService: NCEIService
 ): Promise<{ content: Array<{ type: string; text: string }> }> {
   // Validate input parameters with runtime checks
   const { latitude, longitude } = validateCoordinates(args);
   const includeFireWeather = validateOptionalBoolean(
     (args as CurrentConditionsArgs)?.include_fire_weather,
     'include_fire_weather',
+    false
+  );
+  const includeNormals = validateOptionalBoolean(
+    (args as CurrentConditionsArgs)?.include_normals,
+    'include_normals',
     false
   );
 
@@ -289,6 +300,36 @@ export async function handleGetCurrentConditions(
       // If fire weather data fetch fails, just skip it (don't error the whole request)
       output += `\n## Fire Weather\n\n`;
       output += `⚠️ Fire weather data not available for this location.\n`;
+    }
+  }
+
+  // Climate Normals section (optional)
+  if (includeNormals) {
+    try {
+      // Get date components from observation timestamp
+      const { month, day } = getDateComponents(props.timestamp);
+
+      // Fetch climate normals using hybrid strategy
+      const normals = await getClimateNormals(
+        openMeteoService,
+        nceiService,
+        latitude,
+        longitude,
+        month,
+        day
+      );
+
+      // Format and display normals with current temperature for comparison
+      const currentTemps = {
+        high: max24F !== null ? Math.round(max24F) : undefined,
+        low: min24F !== null ? Math.round(min24F) : undefined
+      };
+
+      output += formatNormals(normals, currentTemps);
+    } catch (error) {
+      // If normals fetch fails, just skip it (don't error the whole request)
+      output += `\n## Climate Normals\n\n`;
+      output += `⚠️ Climate normals data not available for this location.\n`;
     }
   }
 
