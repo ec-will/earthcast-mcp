@@ -980,8 +980,220 @@ When implementing features from this roadmap:
 *Last Updated: 2025-11-07*
 *Current Version: v1.1.0 (Great Lakes & Coastal Marine Enhancement)* ✅
 *Previous: v1.0.0 (Production Release)* ✅
-*Next Target: TBD - Post-v1.0.0 enhancements as needed*
+*Next Target: v1.2.0 - Context & Intelligence (Tier 1 enhancements from FUTURE_ENHANCEMENTS.md)*
 *Design Philosophy: Lean, efficient, user-focused*
+
+---
+
+## v1.2.0 - Context & Intelligence (PLANNED)
+
+**Status:** Planned for implementation
+
+**Theme:** Add critical context and enhance output intelligence
+
+**Goal:** Provide climate context, improve winter weather data, and enhance time display
+
+**Priority:** High (Tier 1 features from FUTURE_ENHANCEMENTS.md analysis)
+
+### 1. Enhance with Climate Normals (NO new tool)
+**Add 30-year average context to forecasts and current conditions:**
+```typescript
+get_forecast({
+  // ... existing parameters
+  include_normals?: boolean  // NEW: show comparison to 30-year averages
+})
+
+get_current_conditions({
+  // ... existing parameters
+  include_normals?: boolean  // NEW: show comparison to normal temps
+})
+```
+
+**What this adds:**
+- ✅ 30-year climate averages (1991-2020 normals)
+- ✅ Deviation from normal ("+5°F above average")
+- ✅ Context for "unusual" vs "normal" conditions
+- ✅ Helps AI understand weather significance
+- **Token cost:** ~100 tokens (parameter enhancement)
+- **New tools added:** 0
+- **User queries enabled:**
+  - "Is this warmer than normal for April?"
+  - "How does this compare to average?"
+  - "Is this unusual weather?"
+
+**Implementation:**
+- NOAA Climate Normals API for US locations
+- Compute from Open-Meteo historical data for international
+- Cache normals data indefinitely (doesn't change)
+- Show prominently when deviation is >10°F from normal
+
+**Effort:** 1-2 weeks
+**Value:** HIGH - Adds critical context to all weather data
+
+### 2. Extract Snow Depth & Snowfall Details (NO new tool)
+**Enhance winter weather output from existing NOAA data:**
+
+**What this adds:**
+- ✅ Current snow depth on ground (from observation stations)
+- ✅ Forecasted snowfall amounts (from gridpoint forecasts)
+- ✅ Snow water equivalent when available
+- ✅ Display only when relevant (>0 inches)
+- **Token cost:** ~0 tokens (output enhancement, no description change)
+- **New tools added:** 0
+- **User queries improved:**
+  - "How much snow is on the ground?" → See snow depth
+  - "How much snow will we get?" → See snowfall forecast
+  - Winter travel assessment (road conditions)
+
+**Implementation:**
+- Extract from existing NOAA observation responses (already in data)
+- Extract from NOAA gridpoint forecasts (already in data)
+- Seasonal display (only show during winter months or when >0)
+- No new API calls required
+
+**Effort:** 2-3 days
+**Value:** HIGH for winter regions, zero-cost extraction
+
+### 3. Timezone-Aware Time Display (NO new tool)
+**Show all forecast times in local timezone automatically:**
+
+**What this adds:**
+- ✅ Sunrise/sunset in local time (not UTC)
+- ✅ Forecast periods in local time
+- ✅ Alert effective/expiration times in local time
+- ✅ Handle DST transitions correctly
+- **Token cost:** ~0 tokens (output enhancement)
+- **New tools added:** 0
+- **User queries improved:**
+  - "When is sunrise in Tokyo?" → Shows 6:30 AM JST (not UTC)
+  - International forecasts are clearer
+  - Reduces timezone confusion
+
+**Implementation:**
+- Use timezone data from search_location results
+- Compute timezone from coordinates using library
+- Format all timestamps with local timezone
+- Handle DST edge cases
+
+**Effort:** 3-5 days
+**Value:** MEDIUM-HIGH - Significantly improves international UX
+
+**Summary for v1.2.0:**
+- **Tools added:** 0 (enhancements only)
+- **Tools enhanced:** 3 (get_forecast, get_current_conditions, output formatting)
+- **Token cost:** ~100 tokens
+- **Effort:** ~2-3 weeks
+- **Value:** Climate context + winter weather + better time display
+
+**Cumulative Total (after v1.2.0):**
+- **Tools:** 8 (unchanged)
+- **Token overhead:** ~1,100 tokens
+- **Features:** Climate normals, snow data, timezone-aware display
+
+---
+
+## v1.3.0 - Safety & Hazards (PLANNED)
+
+**Status:** Planned for implementation after v1.2.0
+
+**Theme:** Expand safety-critical data with water/flood and wildfire monitoring
+
+**Goal:** Fill major gaps in hazard monitoring for rivers and wildfires
+
+**Priority:** Medium-High (Tier 1 safety-critical features)
+
+### 1. Add `get_river_conditions` Tool ⭐ NEW TOOL
+**Monitor river levels and flood status:**
+```typescript
+get_river_conditions({
+  latitude: number,
+  longitude: number,
+  radius?: number       // search radius in km (default: 50)
+})
+```
+
+**What this adds:**
+- ✅ Current river levels from nearest gauges
+- ✅ Flood stage information (minor, moderate, major)
+- ✅ Streamflow data (USGS)
+- ✅ Historical context (percentile for date)
+- ✅ Safety assessment for boating/recreation
+- **Token cost:** ~200 tokens (new tool)
+- **New tools added:** 1
+- **User queries enabled:**
+  - "Is the river flooding?"
+  - "What's the current river level?"
+  - "Safe to kayak on the river today?"
+  - Flood warning context
+
+**Why a separate tool:**
+- SAFETY-CRITICAL (flooding is deadly)
+- Different data source (NOAA AHPS, USGS Water Services)
+- Different query context (water/river vs general weather)
+- Complements weather alerts (flood warnings)
+
+**Implementation:**
+- NOAA AHPS for flood stage data
+- USGS Water Services for real-time streamflow
+- Find nearest gauge(s) within radius
+- Cache for 1 hour (updates frequently)
+- Show flood stage thresholds prominently
+
+**Effort:** 2 weeks
+**Value:** HIGH - Safety-critical for flood-prone areas
+
+### 2. Add `get_wildfire_info` Tool ⭐ NEW TOOL
+**Monitor active wildfires and smoke:**
+```typescript
+get_wildfire_info({
+  latitude: number,
+  longitude: number,
+  radius?: number       // search radius in km (default: 100)
+})
+```
+
+**What this adds:**
+- ✅ Active fire locations within radius
+- ✅ Fire perimeters and containment status
+- ✅ Distance to nearest fire
+- ✅ Smoke forecast integration
+- ✅ Air quality impact from fires
+- ✅ Evacuation risk assessment
+- **Token cost:** ~200 tokens (new tool)
+- **New tools added:** 1
+- **User queries enabled:**
+  - "Are there wildfires near me?"
+  - "How close is the fire?"
+  - "Will smoke reach my area?"
+  - Fire safety planning
+
+**Why a separate tool:**
+- SAFETY-CRITICAL (especially western US)
+- Growing relevance due to climate change
+- Different data source (NASA FIRMS, NIFC)
+- Complements air quality tool (smoke is PM2.5)
+- Distinct use case from general weather
+
+**Implementation:**
+- NASA FIRMS API for active fire detection
+- NIFC for fire perimeters and incident info
+- NOAA HRRR-Smoke for smoke forecasts
+- Cache for 30 minutes (fires change rapidly)
+- Integrate with get_air_quality for smoke attribution
+
+**Effort:** 2 weeks
+**Value:** HIGH - Growing importance, complements air quality
+
+**Summary for v1.3.0:**
+- **Tools added:** 2 (get_river_conditions, get_wildfire_info)
+- **Token cost:** ~400 tokens
+- **Effort:** ~4 weeks
+- **Value:** Safety-critical hazard monitoring
+
+**Cumulative Total (after v1.3.0):**
+- **Tools:** 10 (was 8, added 2)
+- **Token overhead:** ~1,500 tokens
+- **Approaching tool limit:** Consider if any tools can be consolidated in future
 
 ---
 

@@ -13,6 +13,31 @@ This document catalogs potential future enhancements for the Weather MCP Server 
 
 ---
 
+## 📋 Implementation Status
+
+**Tier 1 Features - MOVED TO ACTIVE ROADMAP:**
+The following high-value features have been moved from this research document to [ROADMAP.md](./ROADMAP.md) for active implementation:
+
+### v1.2.0 - Context & Intelligence (Planned)
+- ✅ **Climate Normals** → Moving to ROADMAP.md as `include_normals` parameter for get_forecast/get_current_conditions
+- ✅ **Snow Depth & Snowfall Details** → Moving to ROADMAP.md as output enhancement (extract from existing NOAA data)
+- ✅ **Timezone-Aware Time Display** → Moving to ROADMAP.md as output enhancement for all time displays
+
+### v1.3.0 - Safety & Hazards (Planned)
+- ✅ **River/Flood Data** → Moving to ROADMAP.md as new `get_river_conditions` tool
+- ✅ **Wildfire & Smoke Integration** → Moving to ROADMAP.md as new `get_wildfire_info` tool
+
+**Status:** These features are now in active development planning. See [ROADMAP.md](./ROADMAP.md) for implementation details, effort estimates, and timelines.
+
+**This Document's Purpose Going Forward:**
+This document will continue to serve as a research and ideation catalog for:
+- Tier 2 and Tier 3 enhancements (future consideration)
+- Features that may be better suited for separate MCP servers
+- Ideas requiring further data source research
+- Long-term vision for weather data capabilities
+
+---
+
 ## Enhancement Categories
 
 ### 1. Astronomy & Solar Data
