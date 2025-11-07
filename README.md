@@ -237,32 +237,7 @@ You can also find coordinates manually:
 
 ## Available Tools
 
-### 1. search_location (NEW in v0.4.0)
-Find coordinates for any location worldwide by name.
-
-**Parameters:**
-- `query` (required): Location name to search for (e.g., "Paris", "New York, NY", "Tokyo")
-- `limit` (optional): Maximum number of results to return (1-100, default: 5)
-
-**Description:**
-Converts location names to coordinates using the Open-Meteo Geocoding API. Returns multiple matches with detailed metadata including coordinates, timezone, elevation, population, and administrative regions. Enables natural language weather queries by finding coordinates automatically.
-
-**Examples:**
-```
-"Find coordinates for Paris"
-"Search for Tokyo, Japan"
-"Where is San Francisco, CA?"
-```
-
-**Returns:**
-- Location name and full administrative hierarchy
-- Latitude and longitude coordinates
-- Timezone and elevation
-- Population (when available)
-- Country and region information
-- Feature type (capital, city, airport, etc.)
-
-### 2. get_forecast (ENHANCED in v0.4.0)
+### 1. get_forecast (ENHANCED in v0.4.0)
 Get weather forecast for any location worldwide.
 
 **Parameters:**
@@ -292,27 +267,7 @@ Automatically selects the best data source: NOAA for US locations (more detailed
 - UV index (for international locations)
 - Humidity and atmospheric conditions
 
-### 3. check_service_status
-Check the operational status of weather APIs and cache performance.
-
-**Parameters:** None
-
-**Description:**
-Performs health checks on both NOAA and Open-Meteo APIs to verify they are operational. Use this tool when experiencing errors or to proactively verify service availability before making weather data requests. Returns current status, helpful messages, links to official status pages, and cache statistics.
-
-**Example:**
-```
-Check if the weather services are operational
-```
-
-**Returns:**
-- Operational status for NOAA API (forecasts & current conditions)
-- Operational status for Open-Meteo API (historical data & forecasts)
-- Cache statistics (hit rate, size, API call reduction)
-- Status page links and recommended actions if issues are detected
-- Overall service availability summary
-
-### 4. get_current_conditions
+### 2. get_current_conditions
 Get current weather conditions for a location.
 
 **Parameters:**
@@ -323,6 +278,57 @@ Get current weather conditions for a location.
 ```
 What are the current weather conditions in New York? (latitude: 40.7128, longitude: -74.0060)
 ```
+
+### 3. search_location (NEW in v0.4.0)
+Find coordinates for any location worldwide by name.
+
+**Parameters:**
+- `query` (required): Location name to search for (e.g., "Paris", "New York, NY", "Tokyo")
+- `limit` (optional): Maximum number of results to return (1-100, default: 5)
+
+**Description:**
+Converts location names to coordinates using the Open-Meteo Geocoding API. Returns multiple matches with detailed metadata including coordinates, timezone, elevation, population, and administrative regions. Enables natural language weather queries by finding coordinates automatically.
+
+**Examples:**
+```
+"Find coordinates for Paris"
+"Search for Tokyo, Japan"
+"Where is San Francisco, CA?"
+```
+
+**Returns:**
+- Location name and full administrative hierarchy
+- Latitude and longitude coordinates
+- Timezone and elevation
+- Population (when available)
+- Country and region information
+- Feature type (capital, city, airport, etc.)
+
+### 4. get_alerts
+Get active weather alerts, watches, warnings, and advisories for US locations.
+
+**Parameters:**
+- `latitude` (required): Latitude coordinate (-90 to 90)
+- `longitude` (required): Longitude coordinate (-180 to 180)
+- `active_only` (optional): Show only active alerts (default: true)
+
+**Description:**
+Retrieves current weather alerts from the NOAA API for safety-critical weather information. Returns severity levels (Extreme, Severe, Moderate, Minor), urgency indicators, effective/expiration times, and affected areas. Alerts are automatically sorted by severity with the most critical first.
+
+**Examples:**
+```
+"Are there any weather alerts for Miami, Florida?"
+"Check for severe weather warnings in Oklahoma City"
+"What weather watches are active in my area?" (latitude: 40.7128, longitude: -74.0060)
+```
+
+**Returns:**
+- Alert type and severity (Extreme → Severe → Moderate → Minor)
+- Urgency, certainty, and response type
+- Event description and instructions
+- Effective and expiration times
+- Affected geographic areas
+- Recommended actions and safety information
 
 ### 5. get_historical_weather
 Get historical weather observations for a location.
@@ -383,33 +389,7 @@ If you get "No historical data available":
 - Note: Most recent data has a 5-day delay
 - Very recent dates (last 5 days) may not be available in archival data yet
 
-### 6. get_alerts
-Get active weather alerts, watches, warnings, and advisories for US locations.
-
-**Parameters:**
-- `latitude` (required): Latitude coordinate (-90 to 90)
-- `longitude` (required): Longitude coordinate (-180 to 180)
-- `active_only` (optional): Show only active alerts (default: true)
-
-**Description:**
-Retrieves current weather alerts from the NOAA API for safety-critical weather information. Returns severity levels (Extreme, Severe, Moderate, Minor), urgency indicators, effective/expiration times, and affected areas. Alerts are automatically sorted by severity with the most critical first.
-
-**Examples:**
-```
-"Are there any weather alerts for Miami, Florida?"
-"Check for severe weather warnings in Oklahoma City"
-"What weather watches are active in my area?" (latitude: 40.7128, longitude: -74.0060)
-```
-
-**Returns:**
-- Alert type and severity (Extreme → Severe → Moderate → Minor)
-- Urgency, certainty, and response type
-- Event description and instructions
-- Effective and expiration times
-- Affected geographic areas
-- Recommended actions and safety information
-
-### 7. get_air_quality (NEW in v0.5.0)
+### 6. get_air_quality (NEW in v0.5.0)
 Get comprehensive air quality data for any location worldwide.
 
 **Parameters:**
@@ -434,6 +414,26 @@ Provides current air quality conditions using the Open-Meteo Air Quality API wit
 - UV Index with sun protection guidance
 - Activity recommendations for sensitive groups
 - Optional 5-day hourly forecast
+
+### 7. check_service_status
+Check the operational status of weather APIs and cache performance.
+
+**Parameters:** None
+
+**Description:**
+Performs health checks on both NOAA and Open-Meteo APIs to verify they are operational. Use this tool when experiencing errors or to proactively verify service availability before making weather data requests. Returns current status, helpful messages, links to official status pages, and cache statistics.
+
+**Example:**
+```
+Check if the weather services are operational
+```
+
+**Returns:**
+- Operational status for NOAA API (forecasts & current conditions)
+- Operational status for Open-Meteo API (historical data & forecasts)
+- Cache statistics (hit rate, size, API call reduction)
+- Status page links and recommended actions if issues are detected
+- Overall service availability summary
 
 ### 8. get_marine_conditions (NEW in v0.6.0, Enhanced in v1.1.0)
 Get marine weather conditions including wave height, swell, ocean currents, and sea state with automatic source selection for Great Lakes and coastal bays.
