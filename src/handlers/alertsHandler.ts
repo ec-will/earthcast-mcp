@@ -4,6 +4,7 @@
 
 import { NOAAService } from '../services/noaa.js';
 import { validateCoordinates, validateOptionalBoolean } from '../utils/validation.js';
+import { formatInTimezone, guessTimezoneFromCoords } from '../utils/timezone.js';
 
 interface AlertsArgs {
   latitude?: number;
@@ -23,6 +24,21 @@ export async function handleGetAlerts(
     true
   );
 
+  // Get timezone for proper time formatting
+  let timezone = guessTimezoneFromCoords(latitude, longitude); // fallback
+  try {
+    // Try to get timezone from station (preferred)
+    const stations = await noaaService.getStations(latitude, longitude);
+    if (stations.features && stations.features.length > 0) {
+      const stationTimezone = stations.features[0].properties.timeZone;
+      if (stationTimezone) {
+        timezone = stationTimezone;
+      }
+    }
+  } catch (error) {
+    // Use fallback timezone
+  }
+
   // Get alerts data
   const alertsData = await noaaService.getAlerts(latitude, longitude, active_only);
   const alerts = alertsData.features;
@@ -32,7 +48,7 @@ export async function handleGetAlerts(
   output += `**Location:** ${latitude.toFixed(4)}, ${longitude.toFixed(4)}\n`;
   output += `**Status:** ${active_only ? 'Active alerts only' : 'All alerts'}\n`;
   if (alertsData.updated) {
-    output += `**Updated:** ${new Date(alertsData.updated).toLocaleString()}\n`;
+    output += `**Updated:** ${formatInTimezone(alertsData.updated, timezone)}\n`;
   }
   output += `\n`;
 
@@ -80,15 +96,15 @@ export async function handleGetAlerts(
 
       output += `**Severity:** ${props.severity} | **Urgency:** ${props.urgency} | **Certainty:** ${props.certainty}\n`;
       output += `**Area:** ${props.areaDesc}\n`;
-      output += `**Effective:** ${new Date(props.effective).toLocaleString()}\n`;
-      output += `**Expires:** ${new Date(props.expires).toLocaleString()}\n`;
+      output += `**Effective:** ${formatInTimezone(props.effective, timezone)}\n`;
+      output += `**Expires:** ${formatInTimezone(props.expires, timezone)}\n`;
 
       if (props.onset && props.onset !== props.effective) {
-        output += `**Onset:** ${new Date(props.onset).toLocaleString()}\n`;
+        output += `**Onset:** ${formatInTimezone(props.onset, timezone)}\n`;
       }
 
       if (props.ends) {
-        output += `**Ends:** ${new Date(props.ends).toLocaleString()}\n`;
+        output += `**Ends:** ${formatInTimezone(props.ends, timezone)}\n`;
       }
 
       output += `\n**Description:**\n${props.description}\n`;
