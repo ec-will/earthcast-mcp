@@ -15,6 +15,7 @@ import type {
 import { Cache } from '../utils/cache.js';
 import { CacheConfig, getHistoricalDataTTL } from '../config/cache.js';
 import { validateLatitude, validateLongitude } from '../utils/validation.js';
+import { logger } from '../utils/logger.js';
 import {
   RateLimitError,
   ServiceUnavailableError,
@@ -39,7 +40,7 @@ export class NOAAService {
     const {
       userAgent = '(weather-mcp, contact@example.com)',
       baseURL = 'https://api.weather.gov',
-      timeout = 30000,
+      timeout = CacheConfig.apiTimeoutMs,
       maxRetries = 3
     } = config;
 
@@ -72,6 +73,10 @@ export class NOAAService {
 
       // Rate limit error - suggest retry
       if (status === 429) {
+        logger.warn('Rate limit exceeded', {
+          service: 'NOAA',
+          securityEvent: true
+        });
         throw new RateLimitError('NOAA');
       }
 
@@ -86,6 +91,12 @@ export class NOAAService {
 
       // Other client errors
       if (status >= 400 && status < 500) {
+        logger.warn('Invalid request parameters', {
+          service: 'NOAA',
+          status,
+          detail: data.detail || data.title,
+          securityEvent: true
+        });
         throw new InvalidLocationError(
           'NOAA',
           data.detail || data.title || 'Invalid request'
