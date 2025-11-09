@@ -30,6 +30,7 @@ import { handleSearchLocation } from './handlers/locationHandler.js';
 import { handleGetAirQuality } from './handlers/airQualityHandler.js';
 import { handleGetMarineConditions } from './handlers/marineConditionsHandler.js';
 import { getWeatherImagery, formatWeatherImageryResponse } from './handlers/weatherImageryHandler.js';
+import { getLightningActivity, formatLightningActivityResponse } from './handlers/lightningHandler.js';
 
 /**
  * Server information
@@ -370,6 +371,43 @@ const TOOL_DEFINITIONS = {
       },
       required: ['latitude', 'longitude', 'type']
     }
+  },
+
+  get_lightning_activity: {
+    name: 'get_lightning_activity' as const,
+    description: 'Get real-time lightning strike activity and safety assessment for a location (global coverage). Use this when asked about "lightning nearby", "lightning strikes", "thunderstorm activity", "is it safe from lightning", or "lightning danger". Returns recent strikes within specified radius and time window, including distance, polarity, intensity, and critical safety recommendations. Provides 4-level safety assessment (safe/elevated/high/extreme) based on proximity. SAFETY-CRITICAL tool for outdoor activities and severe weather monitoring.',
+    inputSchema: {
+      type: 'object' as const,
+      properties: {
+        latitude: {
+          type: 'number' as const,
+          description: 'Latitude of the location (-90 to 90)',
+          minimum: -90,
+          maximum: 90
+        },
+        longitude: {
+          type: 'number' as const,
+          description: 'Longitude of the location (-180 to 180)',
+          minimum: -180,
+          maximum: 180
+        },
+        radius: {
+          type: 'number' as const,
+          description: 'Search radius in kilometers (1-500, default: 100)',
+          minimum: 1,
+          maximum: 500,
+          default: 100
+        },
+        timeWindow: {
+          type: 'number' as const,
+          description: 'Time window in minutes for historical strikes (5-120, default: 60)',
+          minimum: 5,
+          maximum: 120,
+          default: 60
+        }
+      },
+      required: ['latitude', 'longitude']
+    }
   }
 };
 
@@ -427,6 +465,19 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
       case 'get_weather_imagery': {
         const result = await getWeatherImagery(args as any);
         const formatted = formatWeatherImageryResponse(result);
+        return {
+          content: [
+            {
+              type: 'text',
+              text: formatted
+            }
+          ]
+        };
+      }
+
+      case 'get_lightning_activity': {
+        const result = await getLightningActivity(args as any);
+        const formatted = formatLightningActivityResponse(result);
         return {
           content: [
             {

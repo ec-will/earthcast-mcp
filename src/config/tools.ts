@@ -23,7 +23,8 @@ export type ToolName =
   | 'search_location'
   | 'get_air_quality'
   | 'get_marine_conditions'
-  | 'get_weather_imagery';
+  | 'get_weather_imagery'
+  | 'get_lightning_activity';
 
 /**
  * Tool presets for easy configuration
@@ -69,7 +70,8 @@ const TOOL_PRESETS: Record<string, ToolName[]> = {
     'search_location',
     'get_air_quality',
     'get_marine_conditions',
-    'get_weather_imagery'
+    'get_weather_imagery',
+    'get_lightning_activity'
   ]
 };
 
@@ -94,7 +96,10 @@ const TOOL_ALIASES: Record<string, ToolName> = {
   'waves': 'get_marine_conditions',
   'imagery': 'get_weather_imagery',
   'radar': 'get_weather_imagery',
-  'satellite': 'get_weather_imagery'
+  'satellite': 'get_weather_imagery',
+  'lightning': 'get_lightning_activity',
+  'strikes': 'get_lightning_activity',
+  'thunderstorm': 'get_lightning_activity'
 };
 
 /**
