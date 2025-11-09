@@ -22,7 +22,8 @@ export type ToolName =
   | 'check_service_status'
   | 'search_location'
   | 'get_air_quality'
-  | 'get_marine_conditions';
+  | 'get_marine_conditions'
+  | 'get_weather_imagery';
 
 /**
  * Tool presets for easy configuration
@@ -67,7 +68,8 @@ const TOOL_PRESETS: Record<string, ToolName[]> = {
     'check_service_status',
     'search_location',
     'get_air_quality',
-    'get_marine_conditions'
+    'get_marine_conditions',
+    'get_weather_imagery'
   ]
 };
 
@@ -89,7 +91,10 @@ const TOOL_ALIASES: Record<string, ToolName> = {
   'aqi': 'get_air_quality',
   'marine': 'get_marine_conditions',
   'ocean': 'get_marine_conditions',
-  'waves': 'get_marine_conditions'
+  'waves': 'get_marine_conditions',
+  'imagery': 'get_weather_imagery',
+  'radar': 'get_weather_imagery',
+  'satellite': 'get_weather_imagery'
 };
 
 /**

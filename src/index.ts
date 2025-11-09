@@ -29,6 +29,7 @@ import { handleCheckServiceStatus } from './handlers/statusHandler.js';
 import { handleSearchLocation } from './handlers/locationHandler.js';
 import { handleGetAirQuality } from './handlers/airQualityHandler.js';
 import { handleGetMarineConditions } from './handlers/marineConditionsHandler.js';
+import { getWeatherImagery, formatWeatherImageryResponse } from './handlers/weatherImageryHandler.js';
 
 /**
  * Server information
@@ -328,6 +329,47 @@ const TOOL_DEFINITIONS = {
       },
       required: ['latitude', 'longitude']
     }
+  },
+
+  get_weather_imagery: {
+    name: 'get_weather_imagery' as const,
+    description: 'Get weather imagery including radar, satellite, and precipitation maps for a location (global coverage). Use this when asked about "show radar", "satellite image", "precipitation map", "weather map", "animated radar", or "what does radar show". Returns image URLs with timestamps for current or animated weather visualization. Supports precipitation radar (global via RainViewer). Includes disclaimer about data delays and official forecast consultation. For numerical forecast data, use get_forecast instead.',
+    inputSchema: {
+      type: 'object' as const,
+      properties: {
+        latitude: {
+          type: 'number' as const,
+          description: 'Latitude of the location (-90 to 90)',
+          minimum: -90,
+          maximum: 90
+        },
+        longitude: {
+          type: 'number' as const,
+          description: 'Longitude of the location (-180 to 180)',
+          minimum: -180,
+          maximum: 180
+        },
+        type: {
+          type: 'string' as const,
+          description: 'Type of imagery: "radar", "satellite", or "precipitation" (default: "precipitation")',
+          enum: ['radar', 'satellite', 'precipitation'],
+          default: 'precipitation'
+        },
+        animated: {
+          type: 'boolean' as const,
+          description: 'Return animated frames showing progression over time (default: false)',
+          default: false
+        },
+        layers: {
+          type: 'array' as const,
+          description: 'Optional layers to include in imagery (future enhancement)',
+          items: {
+            type: 'string' as const
+          }
+        }
+      },
+      required: ['latitude', 'longitude', 'type']
+    }
   }
 };
 
@@ -381,6 +423,19 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
 
       case 'get_marine_conditions':
         return await handleGetMarineConditions(args, noaaService, openMeteoService);
+
+      case 'get_weather_imagery': {
+        const result = await getWeatherImagery(args as any);
+        const formatted = formatWeatherImageryResponse(result);
+        return {
+          content: [
+            {
+              type: 'text',
+              text: formatted
+            }
+          ]
+        };
+      }
 
       default:
         throw new Error(`Unknown tool: ${name}`);
