@@ -216,7 +216,9 @@ function isToolName(name: string): name is ToolName {
     'check_service_status',
     'search_location',
     'get_air_quality',
-    'get_marine_conditions'
+    'get_marine_conditions',
+    'get_weather_imagery',
+    'get_lightning_activity'
   ];
   return validTools.includes(name as ToolName);
 }

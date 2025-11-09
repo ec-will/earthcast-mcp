@@ -1,13 +1,28 @@
 /**
- * Blitzortung.org API client for real-time lightning detection
+ * Blitzortung.org MQTT client for real-time lightning detection
  * Community-operated global lightning detection network (free, no API key required)
+ *
+ * Data access via public MQTT broker maintained for homeassistant-blitzortung integration
+ * @see https://github.com/mrk-its/homeassistant-blitzortung
  * @see https://www.blitzortung.org/
  */
 
-import axios, { AxiosInstance } from 'axios';
+import mqtt, { MqttClient } from 'mqtt';
 import { logger } from '../utils/logger.js';
 import { LightningStrike } from '../types/lightning.js';
-import { DataNotFoundError } from '../errors/ApiError.js';
+import { calculateGeohashSubscriptions } from '../utils/geohash.js';
+
+/**
+ * Raw lightning strike data from MQTT
+ */
+interface MQTTLightningStrike {
+  lat: number;
+  lon: number;
+  time: number; // Unix timestamp in milliseconds
+  pol?: number; // Polarity
+  mcs?: number; // Amplitude (milli-coulomb-seconds, or kA)
+  stat?: number; // Number of stations that detected the strike
+}
 
 /**
  * Calculate distance between two coordinates using Haversine formula
@@ -34,23 +49,221 @@ function calculateDistance(
 }
 
 export class BlitzortungService {
-  private client: AxiosInstance;
-  private readonly baseUrl = 'https://data.blitzortung.org';
+  private client: MqttClient | null = null;
+  private readonly brokerUrl = 'mqtt://blitzortung.ha.sed.pl:1883';
+  private readonly topicPrefix = 'blitzortung/1.1';
+  private readonly reconnectPeriod = 5000; // 5 seconds
+  private readonly connectTimeout = 30000; // 30 seconds
+
+  // Rolling buffer of recent strikes (last 2 hours)
+  private strikeBuffer: Map<string, LightningStrike> = new Map();
+  private readonly bufferDuration = 120 * 60 * 1000; // 2 hours in milliseconds
+
+  // Subscription management
+  private subscribedGeohashes: Set<string> = new Set();
+  private isConnecting = false;
+  private isConnected = false;
 
   constructor() {
-    this.client = axios.create({
-      baseURL: this.baseUrl,
-      timeout: 15000,
-      headers: {
-        'User-Agent': 'weather-mcp-server/1.5.0'
-      }
-    });
+    // Start cleanup interval
+    this.startCleanupInterval();
   }
 
   /**
-   * Get recent lightning strikes from Blitzortung network
-   * Note: Blitzortung.org has different data access methods. This uses the JSON data feed.
-   * The exact API may vary; implementing a common pattern here.
+   * Connect to MQTT broker if not already connected
+   */
+  private async ensureConnected(): Promise<void> {
+    if (this.isConnected && this.client) {
+      return;
+    }
+
+    if (this.isConnecting) {
+      // Wait for existing connection attempt
+      return new Promise((resolve) => {
+        const checkInterval = setInterval(() => {
+          if (this.isConnected || !this.isConnecting) {
+            clearInterval(checkInterval);
+            resolve();
+          }
+        }, 100);
+      });
+    }
+
+    this.isConnecting = true;
+
+    try {
+      logger.info('Connecting to Blitzortung MQTT broker', {
+        broker: this.brokerUrl
+      });
+
+      this.client = mqtt.connect(this.brokerUrl, {
+        reconnectPeriod: this.reconnectPeriod,
+        connectTimeout: this.connectTimeout,
+        clientId: `weather-mcp-${Math.random().toString(16).slice(2, 10)}`
+      });
+
+      await new Promise<void>((resolve, reject) => {
+        const timeoutId = setTimeout(() => {
+          reject(new Error('MQTT connection timeout'));
+        }, this.connectTimeout);
+
+        this.client!.on('connect', () => {
+          clearTimeout(timeoutId);
+          this.isConnected = true;
+          this.isConnecting = false;
+          logger.info('Connected to Blitzortung MQTT broker');
+          resolve();
+        });
+
+        this.client!.on('error', (error) => {
+          clearTimeout(timeoutId);
+          this.isConnecting = false;
+          logger.error('MQTT connection error', error);
+          reject(error);
+        });
+
+        this.client!.on('close', () => {
+          this.isConnected = false;
+          logger.warn('MQTT connection closed');
+        });
+
+        this.client!.on('message', this.handleMessage.bind(this));
+      });
+    } catch (error) {
+      this.isConnecting = false;
+      throw error;
+    }
+  }
+
+  /**
+   * Handle incoming MQTT message
+   */
+  private handleMessage(topic: string, payload: Buffer): void {
+    try {
+      const payloadStr = payload.toString();
+      const data: MQTTLightningStrike = JSON.parse(payloadStr);
+
+      // Validate required fields
+      if (!data.lat || !data.lon || !data.time) {
+        logger.warn('Lightning strike missing required fields', {
+          topic,
+          hasLat: !!data.lat,
+          hasLon: !!data.lon,
+          hasTime: !!data.time
+        });
+        return;
+      }
+
+      // Convert timestamp - Blitzortung sends nanoseconds, convert to milliseconds
+      // Example: 1762715394083570200 nanoseconds -> 1731178800000 milliseconds
+      let timestampMs = data.time;
+      if (data.time > 10000000000000) {
+        // If timestamp is > year 2286 in milliseconds, it's probably in nanoseconds
+        timestampMs = Math.floor(data.time / 1000000);
+      }
+
+      // Convert to our LightningStrike format
+      const strike: LightningStrike = {
+        timestamp: new Date(timestampMs),
+        latitude: data.lat,
+        longitude: data.lon,
+        polarity: data.pol || 0,
+        amplitude: data.mcs || 0,
+        stationCount: data.stat,
+        distance: 0 // Will be calculated when filtering
+      };
+
+      // Validate timestamp
+      if (isNaN(strike.timestamp.getTime())) {
+        logger.warn('Invalid timestamp in lightning strike', {
+          topic,
+          time: data.time,
+          converted: timestampMs
+        });
+        return;
+      }
+
+      // Add to buffer with unique key
+      const key = `${data.time}_${data.lat}_${data.lon}`;
+      this.strikeBuffer.set(key, strike);
+
+      // Log every strike at INFO level for debugging
+      logger.info('Lightning strike added to buffer', {
+        bufferSize: this.strikeBuffer.size,
+        strike: {
+          lat: strike.latitude,
+          lon: strike.longitude,
+          time: strike.timestamp.toISOString(),
+          topic
+        }
+      });
+    } catch (error) {
+      logger.warn('Failed to parse lightning strike message', {
+        error: (error as Error).message,
+        topic
+      });
+    }
+  }
+
+  /**
+   * Subscribe to geohash topics for a location
+   */
+  private async subscribeToLocation(
+    latitude: number,
+    longitude: number,
+    radiusKm: number
+  ): Promise<void> {
+    await this.ensureConnected();
+
+    if (!this.client) {
+      throw new Error('MQTT client not connected');
+    }
+
+    // Calculate required geohashes
+    const geohashes = calculateGeohashSubscriptions(latitude, longitude, radiusKm);
+
+    logger.info('Subscribing to geohash topics', {
+      latitude,
+      longitude,
+      radiusKm,
+      geohashCount: geohashes.size,
+      geohashes: Array.from(geohashes)
+    });
+
+    // Subscribe to each geohash
+    const subscriptions: string[] = [];
+    for (const geohash of geohashes) {
+      if (!this.subscribedGeohashes.has(geohash)) {
+        // IMPORTANT: Geohash characters must be separated by slashes in the topic
+        // Example: "dhv" becomes "blitzortung/1.1/d/h/v/#"
+        const geohashPath = geohash.split('').join('/');
+        const topic = `${this.topicPrefix}/${geohashPath}/#`;
+        subscriptions.push(topic);
+        this.subscribedGeohashes.add(geohash);
+      }
+    }
+
+    if (subscriptions.length > 0) {
+      await new Promise<void>((resolve, reject) => {
+        this.client!.subscribe(subscriptions, (error) => {
+          if (error) {
+            logger.error('Failed to subscribe to topics', error, {
+              topics: subscriptions
+            });
+            reject(error);
+          } else {
+            logger.info('Subscribed to geohash topics', {
+              count: subscriptions.length
+            });
+            resolve();
+          }
+        });
+      });
+    }
+  }
+
+  /**
+   * Get recent lightning strikes from buffer
    */
   async getLightningStrikes(
     latitude: number,
@@ -59,128 +272,75 @@ export class BlitzortungService {
     timeWindowMinutes: number = 60
   ): Promise<LightningStrike[]> {
     try {
-      logger.info('Fetching lightning data from Blitzortung', {
+      logger.info('Fetching lightning data from Blitzortung MQTT', {
         latitude,
         longitude,
         radiusKm,
         timeWindowMinutes
       });
 
-      // Blitzortung provides different endpoints for different regions and time windows
-      // This is a simplified implementation - actual API may require different approach
-      // For real-time data, they provide JSON feeds at regional endpoints
-      const region = this.determineRegion(latitude, longitude);
-      const endpoint = `/data/last_strikes.json?region=${region}`;
+      // Subscribe to the location
+      await this.subscribeToLocation(latitude, longitude, radiusKm);
 
-      const response = await this.client.get(endpoint);
+      // Wait for strikes to accumulate in buffer after subscription
+      // This allows time for MQTT messages to arrive and be processed
+      // 10 seconds provides good coverage for active lightning areas
+      await new Promise(resolve => setTimeout(resolve, 10000));
 
-      if (!response.data) {
-        throw new DataNotFoundError(
-          'RainViewer', // Using RainViewer as placeholder since Blitzortung isn't in type yet
-          'No lightning data available from Blitzortung network'
-        );
-      }
-
-      // Parse strikes from response
-      const strikes = this.parseStrikes(response.data, latitude, longitude, radiusKm, timeWindowMinutes);
+      // Filter strikes from buffer
+      const strikes = this.filterStrikes(
+        latitude,
+        longitude,
+        radiusKm,
+        timeWindowMinutes
+      );
 
       logger.info('Lightning data retrieved successfully', {
         totalStrikes: strikes.length,
-        region
+        bufferSize: this.strikeBuffer.size
       });
 
       return strikes;
     } catch (error) {
-      if (axios.isAxiosError(error)) {
-        const status = error.response?.status;
-        const message = error.response?.data?.message || error.message;
-
-        logger.error('Blitzortung API request failed', error, {
-          status,
-          message
-        });
-
-        // For now, return empty array instead of throwing
-        // This allows graceful degradation if the service is unavailable
-        logger.warn('Returning empty lightning data due to API unavailability');
-        return [];
-      }
-
-      throw error;
+      logger.error('Failed to fetch lightning data', error as Error);
+      // Return empty array on error to allow graceful degradation
+      return [];
     }
   }
 
   /**
-   * Determine geographic region for Blitzortung data endpoint
+   * Filter strikes from buffer based on location and time window
    */
-  private determineRegion(latitude: number, longitude: number): string {
-    // Blitzortung has regional data feeds
-    // Simplified region determination
-    if (latitude >= 24 && latitude <= 50 && longitude >= -125 && longitude <= -66) {
-      return 'na'; // North America
-    } else if (latitude >= 35 && latitude <= 70 && longitude >= -10 && longitude <= 40) {
-      return 'eu'; // Europe
-    } else if (latitude >= -45 && latitude <= -10 && longitude >= 110 && longitude <= 155) {
-      return 'oc'; // Oceania
-    } else {
-      return 'global'; // Default to global feed
-    }
-  }
-
-  /**
-   * Parse and filter strikes from Blitzortung response
-   */
-  private parseStrikes(
-    data: any,
+  private filterStrikes(
     centerLat: number,
     centerLon: number,
     radiusKm: number,
     timeWindowMinutes: number
   ): LightningStrike[] {
-    const strikes: LightningStrike[] = [];
     const now = Date.now();
     const cutoffTime = now - timeWindowMinutes * 60 * 1000;
+    const strikes: LightningStrike[] = [];
 
-    // Blitzortung data format varies, but typically includes arrays of strikes
-    // This is a defensive implementation that handles different possible formats
-    const strikeData = Array.isArray(data) ? data : data.strikes || [];
+    for (const strike of this.strikeBuffer.values()) {
+      // Check time window
+      if (strike.timestamp.getTime() < cutoffTime) {
+        continue;
+      }
 
-    for (const strike of strikeData) {
-      try {
-        // Parse strike data - format may vary by endpoint
-        const timestamp = typeof strike.time === 'number'
-          ? new Date(strike.time)
-          : new Date(strike.time || strike.timestamp || 0);
+      // Calculate distance
+      const distance = calculateDistance(
+        centerLat,
+        centerLon,
+        strike.latitude,
+        strike.longitude
+      );
 
-        // Skip if outside time window
-        if (timestamp.getTime() < cutoffTime) {
-          continue;
-        }
-
-        const lat = strike.lat || strike.latitude || 0;
-        const lon = strike.lon || strike.longitude || 0;
-
-        // Calculate distance from center point
-        const distance = calculateDistance(centerLat, centerLon, lat, lon);
-
-        // Skip if outside radius
-        if (distance > radiusKm) {
-          continue;
-        }
-
+      // Check if within radius
+      if (distance <= radiusKm) {
         strikes.push({
-          timestamp,
-          latitude: lat,
-          longitude: lon,
-          polarity: strike.pol || strike.polarity || 0,
-          amplitude: strike.mcs || strike.amplitude || 0,
-          stationCount: strike.stat || strike.stations || undefined,
+          ...strike,
           distance
         });
-      } catch (err) {
-        // Skip invalid strikes but log the issue
-        logger.warn('Failed to parse lightning strike data', { error: (err as Error).message });
-        continue;
       }
     }
 
@@ -191,45 +351,53 @@ export class BlitzortungService {
   }
 
   /**
-   * Generate mock lightning data for testing/fallback
-   * This is used when Blitzortung is unavailable or for development
+   * Clean up old strikes from buffer
    */
-  generateMockData(
-    latitude: number,
-    longitude: number,
-    radiusKm: number = 100,
-    strikeCount: number = 5
-  ): LightningStrike[] {
-    const strikes: LightningStrike[] = [];
+  private cleanupBuffer(): void {
     const now = Date.now();
+    const cutoffTime = now - this.bufferDuration;
+    let removedCount = 0;
 
-    for (let i = 0; i < strikeCount; i++) {
-      // Generate random position within radius
-      const angle = Math.random() * 2 * Math.PI;
-      const distance = Math.random() * radiusKm;
-
-      // Approximate lat/lon offset (simplified, not exact)
-      const latOffset = (distance / 111) * Math.cos(angle);
-      const lonOffset = (distance / (111 * Math.cos((latitude * Math.PI) / 180))) * Math.sin(angle);
-
-      const strikeLat = latitude + latOffset;
-      const strikeLon = longitude + lonOffset;
-
-      strikes.push({
-        timestamp: new Date(now - Math.random() * 60 * 60 * 1000), // Within last hour
-        latitude: strikeLat,
-        longitude: strikeLon,
-        polarity: Math.random() > 0.5 ? 1 : -1,
-        amplitude: 10 + Math.random() * 90, // 10-100 kA
-        stationCount: Math.floor(5 + Math.random() * 15),
-        distance
-      });
+    for (const [key, strike] of this.strikeBuffer.entries()) {
+      if (strike.timestamp.getTime() < cutoffTime) {
+        this.strikeBuffer.delete(key);
+        removedCount++;
+      }
     }
 
-    // Sort by distance
-    strikes.sort((a, b) => (a.distance || 0) - (b.distance || 0));
+    if (removedCount > 0) {
+      logger.debug('Cleaned up old lightning strikes from buffer', {
+        removed: removedCount,
+        remaining: this.strikeBuffer.size
+      });
+    }
+  }
 
-    return strikes;
+  /**
+   * Start periodic buffer cleanup
+   */
+  private startCleanupInterval(): void {
+    // Clean up every 5 minutes
+    setInterval(() => {
+      this.cleanupBuffer();
+    }, 5 * 60 * 1000);
+  }
+
+  /**
+   * Disconnect from MQTT broker
+   */
+  async disconnect(): Promise<void> {
+    if (this.client) {
+      await new Promise<void>((resolve) => {
+        this.client!.end(false, {}, () => {
+          this.isConnected = false;
+          this.subscribedGeohashes.clear();
+          logger.info('Disconnected from Blitzortung MQTT broker');
+          resolve();
+        });
+      });
+      this.client = null;
+    }
   }
 }
 
