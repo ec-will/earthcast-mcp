@@ -60,6 +60,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Cache immutability tests
   - NWPS bounding box calculation tests
 
+### Changed
+- **Dependencies** - Updated to latest versions (integrated Dependabot PRs #5, #6)
+  - `@modelcontextprotocol/sdk` 1.21.0 → 1.21.1
+  - `vitest` 4.0.7 → 4.0.8
+  - `@vitest/coverage-v8` 4.0.7 → 4.0.8
+
 ## [1.6.0] - 2025-11-09
 
 ### Added
