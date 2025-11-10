@@ -7,6 +7,59 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.6.1] - 2025-11-10
+
+### Fixed
+
+#### Security Fixes
+- **Blitzortung MQTT Security** - Added TLS warnings and security guidance for lightning feed
+  - Added runtime warning when using plaintext MQTT connections
+  - Enhanced documentation about security implications
+  - Recommended mitigations for production deployments (TLS proxy, trusted networks)
+  - Environment variable `BLITZORTUNG_MQTT_URL` for TLS-enabled brokers
+- **Coordinate Privacy** - Implemented coordinate redaction in logging to protect user privacy
+  - Added `redactCoordinatesForLogging()` utility that rounds coordinates to ~1.1km precision (2 decimal places)
+  - Updated all handlers to use redacted coordinates in logs (lightning, marine, imagery)
+  - Environment variable `LOG_PII=true` to enable full precision logging (not recommended for production)
+  - Complies with GDPR/CPRA data minimization requirements
+- **Markdown Injection Prevention** - Fixed vulnerability in location search results
+  - Added `escapeMarkdown()` function to sanitize user input
+  - Prevents injection of malicious Markdown (links, images, scripts)
+  - Normalizes whitespace to prevent structure injection
+
+#### Performance & Reliability Fixes
+- **River Conditions Performance** - Implemented bounding box queries to avoid downloading entire gauge catalog
+  - Added `getNWPSGaugesInBoundingBox()` method with server-side filtering
+  - Calculates efficient bounding box based on search radius and latitude
+  - Falls back to client-side filtering if API doesn't support bbox queries
+  - Reduces bandwidth and latency by orders of magnitude for location-specific queries
+- **Cached Data Mutation** - Fixed forecast handler mutating cached NOAA data
+  - Changed `getMaxProbabilityFromSeries()` to work on local copies
+  - Prevents severe weather calculations from affecting other formatters using same cached object
+  - Eliminates intermittent "missing probability" bugs
+- **Blitzortung Subscription Management** - Implemented LRU-based subscription cleanup
+  - Changed subscription tracking from Set to Map with timestamps
+  - Added automatic eviction when exceeding 50 concurrent subscriptions
+  - Added stale subscription pruning (1-hour inactivity threshold, checked every 15 min)
+  - Prevents unbounded memory and CPU growth from subscription accumulation
+- **RainViewer Polar Coordinate Handling** - Fixed tile generation for extreme latitudes
+  - Added Web Mercator latitude clamping (±85.05112878°) to prevent NaN coordinates
+  - Prevents division by zero in tile calculations at polar regions
+  - Logs warning when clamping occurs
+- **Timezone Fallback** - Changed international timezone fallback from server timezone to UTC
+  - Provides predictable, unambiguous timestamps for all users
+  - Eliminates misleading timestamps for international queries (e.g., Sydney users seeing Chicago times)
+  - US timezone heuristic unchanged (America/New_York, Chicago, Denver, Los_Angeles)
+
+### Added
+- **Comprehensive Test Coverage** - Added 28 unit tests for v1.6.1 fixes
+  - Coordinate redaction privacy tests
+  - Markdown injection prevention tests
+  - RainViewer polar coordinate clamping tests
+  - Timezone fallback behavior tests
+  - Cache immutability tests
+  - NWPS bounding box calculation tests
+
 ## [1.6.0] - 2025-11-09
 
 ### Added

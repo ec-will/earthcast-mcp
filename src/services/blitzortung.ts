@@ -8,7 +8,7 @@
  */
 
 import mqtt, { MqttClient } from 'mqtt';
-import { logger } from '../utils/logger.js';
+import { logger, redactCoordinatesForLogging } from '../utils/logger.js';
 import { LightningStrike } from '../types/lightning.js';
 import { calculateGeohashSubscriptions } from '../utils/geohash.js';
 
@@ -50,11 +50,18 @@ function calculateDistance(
 
 export class BlitzortungService {
   private client: MqttClient | null = null;
-  // NOTE: Default broker uses unencrypted MQTT (port 1883) as the public Blitzortung
-  // community broker (blitzortung.ha.sed.pl) does not currently support TLS connections.
-  // Lightning data is public information, and location privacy is protected via geohash
-  // subscriptions (precision ~4-40km). For enhanced security, configure BLITZORTUNG_MQTT_URL
-  // environment variable to point to an alternative broker with TLS support (mqtts:// or wss://).
+  // SECURITY WARNING: Default broker uses PLAINTEXT MQTT (port 1883)
+  // The public Blitzortung community broker (blitzortung.ha.sed.pl) does not support TLS.
+  // While lightning strike data is public information, plaintext connections allow:
+  //   - Network observers to see which regions you're monitoring (via MQTT subscriptions)
+  //   - Potential message tampering (injecting false lightning data)
+  //
+  // RECOMMENDED MITIGATIONS:
+  //   1. Set BLITZORTUNG_MQTT_URL to a TLS-enabled broker (mqtts:// or wss://)
+  //   2. Run a local MQTT proxy with TLS termination
+  //   3. Deploy in a trusted network environment
+  //
+  // Location privacy: Geohash subscriptions have ~4-40km precision (limited tracking risk)
   private readonly brokerUrl = process.env.BLITZORTUNG_MQTT_URL || 'mqtt://blitzortung.ha.sed.pl:1883';
   private readonly topicPrefix = 'blitzortung/1.1';
   private readonly reconnectPeriod = 5000; // 5 seconds
@@ -65,14 +72,17 @@ export class BlitzortungService {
   private readonly bufferDuration = 120 * 60 * 1000; // 2 hours in milliseconds
   private readonly maxBufferSize = 10000; // Maximum strikes to buffer (safety limit)
 
-  // Subscription management
-  private subscribedGeohashes: Set<string> = new Set();
+  // Subscription management with LRU tracking
+  private subscribedGeohashes: Map<string, number> = new Map(); // geohash -> last access timestamp
+  private readonly maxSubscriptions = 50; // Limit concurrent subscriptions to prevent unbounded growth
   private isConnecting = false;
   private isConnected = false;
 
   constructor() {
     // Start cleanup interval
     this.startCleanupInterval();
+    // Start subscription pruning interval
+    this.startSubscriptionPruning();
   }
 
   /**
@@ -98,8 +108,21 @@ export class BlitzortungService {
     this.isConnecting = true;
 
     try {
+      // Security warning for plaintext connections
+      const isPlaintext = this.brokerUrl.startsWith('mqtt://') ||
+                         (!this.brokerUrl.startsWith('mqtts://') && !this.brokerUrl.startsWith('wss://'));
+
+      if (isPlaintext) {
+        logger.warn('SECURITY: Using plaintext MQTT connection (unencrypted)', {
+          broker: this.brokerUrl,
+          securityEvent: true,
+          recommendation: 'Use BLITZORTUNG_MQTT_URL environment variable to configure TLS broker (mqtts:// or wss://)'
+        });
+      }
+
       logger.info('Connecting to Blitzortung MQTT broker', {
-        broker: this.brokerUrl
+        broker: this.brokerUrl,
+        encrypted: !isPlaintext
       });
 
       this.client = mqtt.connect(this.brokerUrl, {
@@ -212,12 +235,14 @@ export class BlitzortungService {
       const key = `${data.time}_${data.lat}_${data.lon}`;
       this.strikeBuffer.set(key, strike);
 
-      // Log every strike at INFO level for debugging
-      logger.info('Lightning strike added to buffer', {
+      // Log strikes at DEBUG level with coordinate redaction for privacy
+      // Strike coordinates are rounded to ~1km precision to prevent tracking individual locations
+      const redacted = redactCoordinatesForLogging(strike.latitude, strike.longitude);
+      logger.debug('Lightning strike added to buffer', {
         bufferSize: this.strikeBuffer.size,
         strike: {
-          lat: strike.latitude,
-          lon: strike.longitude,
+          lat: redacted.lat,
+          lon: redacted.lon,
           time: strike.timestamp.toISOString(),
           topic
         }
@@ -247,15 +272,25 @@ export class BlitzortungService {
     // Calculate required geohashes
     const geohashes = calculateGeohashSubscriptions(latitude, longitude, radiusKm);
 
+    // Redact coordinates for logging to protect user privacy
+    const redacted = redactCoordinatesForLogging(latitude, longitude);
     logger.info('Subscribing to geohash topics', {
-      latitude,
-      longitude,
+      latitude: redacted.lat,
+      longitude: redacted.lon,
       radiusKm,
       geohashCount: geohashes.size,
       geohashes: Array.from(geohashes)
     });
 
-    // Subscribe to each geohash
+    const now = Date.now();
+
+    // Check if we need to evict old subscriptions before adding new ones
+    const potentialNewSubs = Array.from(geohashes).filter(g => !this.subscribedGeohashes.has(g));
+    if (this.subscribedGeohashes.size + potentialNewSubs.length > this.maxSubscriptions) {
+      await this.evictOldestSubscriptions(potentialNewSubs.length);
+    }
+
+    // Subscribe to each geohash and track access time
     const subscriptions: string[] = [];
     for (const geohash of geohashes) {
       if (!this.subscribedGeohashes.has(geohash)) {
@@ -264,8 +299,9 @@ export class BlitzortungService {
         const geohashPath = geohash.split('').join('/');
         const topic = `${this.topicPrefix}/${geohashPath}/#`;
         subscriptions.push(topic);
-        this.subscribedGeohashes.add(geohash);
       }
+      // Update access time for all geohashes in this request (LRU tracking)
+      this.subscribedGeohashes.set(geohash, now);
     }
 
     if (subscriptions.length > 0) {
@@ -278,13 +314,123 @@ export class BlitzortungService {
             reject(error);
           } else {
             logger.info('Subscribed to geohash topics', {
-              count: subscriptions.length
+              count: subscriptions.length,
+              totalSubscriptions: this.subscribedGeohashes.size
             });
             resolve();
           }
         });
       });
+    } else {
+      logger.debug('All required geohashes already subscribed', {
+        totalSubscriptions: this.subscribedGeohashes.size
+      });
     }
+  }
+
+  /**
+   * Evict oldest subscriptions to make room for new ones (LRU eviction)
+   */
+  private async evictOldestSubscriptions(slotsNeeded: number): Promise<void> {
+    if (!this.client || slotsNeeded <= 0) {
+      return;
+    }
+
+    // Sort by access time (oldest first)
+    const sorted = Array.from(this.subscribedGeohashes.entries())
+      .sort((a, b) => a[1] - b[1]);
+
+    // Evict oldest entries
+    const toEvict = sorted.slice(0, slotsNeeded);
+    const topics = toEvict.map(([geohash]) => {
+      const geohashPath = geohash.split('').join('/');
+      return `${this.topicPrefix}/${geohashPath}/#`;
+    });
+
+    logger.info('Evicting old geohash subscriptions (LRU)', {
+      count: toEvict.length,
+      slotsNeeded,
+      currentSize: this.subscribedGeohashes.size,
+      maxSubscriptions: this.maxSubscriptions,
+      securityEvent: true
+    });
+
+    // Unsubscribe from topics
+    await new Promise<void>((resolve) => {
+      this.client!.unsubscribe(topics, (error) => {
+        if (error) {
+          logger.warn('Failed to unsubscribe from topics', {
+            error: error.message,
+            topics: topics.slice(0, 3) // Log first 3 for debugging
+          });
+        }
+        resolve(); // Always resolve to avoid blocking
+      });
+    });
+
+    // Remove from tracking map
+    for (const [geohash] of toEvict) {
+      this.subscribedGeohashes.delete(geohash);
+    }
+
+    logger.debug('Eviction complete', {
+      remainingSubscriptions: this.subscribedGeohashes.size
+    });
+  }
+
+  /**
+   * Periodically prune stale subscriptions (not accessed in last hour)
+   */
+  private startSubscriptionPruning(): void {
+    // Prune every 15 minutes
+    setInterval(async () => {
+      if (!this.client || this.subscribedGeohashes.size === 0) {
+        return;
+      }
+
+      const now = Date.now();
+      const staleThreshold = 60 * 60 * 1000; // 1 hour
+      const staleGeohashes: string[] = [];
+
+      for (const [geohash, lastAccess] of this.subscribedGeohashes.entries()) {
+        if (now - lastAccess > staleThreshold) {
+          staleGeohashes.push(geohash);
+        }
+      }
+
+      if (staleGeohashes.length > 0) {
+        logger.info('Pruning stale geohash subscriptions', {
+          count: staleGeohashes.length,
+          totalBefore: this.subscribedGeohashes.size
+        });
+
+        const topics = staleGeohashes.map(geohash => {
+          const geohashPath = geohash.split('').join('/');
+          return `${this.topicPrefix}/${geohashPath}/#`;
+        });
+
+        // Unsubscribe from stale topics
+        await new Promise<void>((resolve) => {
+          this.client!.unsubscribe(topics, (error) => {
+            if (error) {
+              logger.warn('Failed to unsubscribe from stale topics', {
+                error: error.message
+              });
+            }
+            resolve();
+          });
+        });
+
+        // Remove from tracking
+        for (const geohash of staleGeohashes) {
+          this.subscribedGeohashes.delete(geohash);
+        }
+
+        logger.debug('Pruning complete', {
+          remainingSubscriptions: this.subscribedGeohashes.size
+        });
+      }
+    }, 15 * 60 * 1000); // Every 15 minutes
   }
 
   /**
@@ -297,9 +443,11 @@ export class BlitzortungService {
     timeWindowMinutes: number = 60
   ): Promise<LightningStrike[]> {
     try {
+      // Redact coordinates for logging to protect user privacy
+      const redacted = redactCoordinatesForLogging(latitude, longitude);
       logger.info('Fetching lightning data from Blitzortung MQTT', {
-        latitude,
-        longitude,
+        latitude: redacted.lat,
+        longitude: redacted.lon,
         radiusKm,
         timeWindowMinutes
       });
@@ -410,9 +558,14 @@ export class BlitzortungService {
 
   /**
    * Disconnect from MQTT broker
+   * This method is available for graceful shutdown scenarios
    */
   async disconnect(): Promise<void> {
     if (this.client) {
+      logger.info('Disconnecting from Blitzortung MQTT broker', {
+        activeSubscriptions: this.subscribedGeohashes.size
+      });
+
       await new Promise<void>((resolve) => {
         this.client!.end(false, {}, () => {
           this.isConnected = false;

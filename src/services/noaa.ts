@@ -688,6 +688,7 @@ export class NOAAService {
    * Note: This endpoint returns all gauges across the US. Consider using
    * geographic filtering or querying by specific gauge IDs instead.
    * @returns Array of all river gauges
+   * @deprecated Use getNWPSGaugesInBoundingBox instead to avoid downloading entire catalog
    */
   async getAllNWPSGauges(): Promise<NWPSGauge[]> {
     // Check cache first (if enabled) - cache for 24 hours (gauges rarely change)
@@ -708,6 +709,88 @@ export class NOAAService {
 
     const response = await this.nwpsClient.get<NWPSGauge[]>('/gauges');
     return response.data;
+  }
+
+  /**
+   * Get NWPS river gauges within a bounding box
+   * More efficient than getAllNWPSGauges() for location-specific queries
+   * @param west Western longitude boundary
+   * @param south Southern latitude boundary
+   * @param east Eastern longitude boundary
+   * @param north Northern latitude boundary
+   * @returns Array of gauges within the bounding box
+   */
+  async getNWPSGaugesInBoundingBox(
+    west: number,
+    south: number,
+    east: number,
+    north: number
+  ): Promise<NWPSGauge[]> {
+    // Validate bounding box
+    validateLongitude(west);
+    validateLongitude(east);
+    validateLatitude(south);
+    validateLatitude(north);
+
+    if (west >= east) {
+      throw new Error('Invalid bounding box: west longitude must be less than east longitude');
+    }
+    if (south >= north) {
+      throw new Error('Invalid bounding box: south latitude must be less than north latitude');
+    }
+
+    // Check cache first (if enabled)
+    const bboxKey = `${west.toFixed(2)},${south.toFixed(2)},${east.toFixed(2)},${north.toFixed(2)}`;
+    if (CacheConfig.enabled) {
+      const cacheKey = Cache.generateKey('nwps-gauges-bbox', bboxKey);
+      const cached = this.cache.get(cacheKey);
+      if (cached) {
+        return cached as NWPSGauge[];
+      }
+    }
+
+    // NWPS API supports bounding box queries via query parameters
+    const params = {
+      west: west.toString(),
+      south: south.toString(),
+      east: east.toString(),
+      north: north.toString()
+    };
+
+    try {
+      const response = await this.nwpsClient.get<NWPSGauge[]>('/gauges', { params });
+      const result = response.data;
+
+      // Cache for 24 hours
+      if (CacheConfig.enabled) {
+        const cacheKey = Cache.generateKey('nwps-gauges-bbox', bboxKey);
+        this.cache.set(cacheKey, result, 86400000);
+      }
+
+      return result;
+    } catch (error) {
+      // If bounding box query fails, fall back to client-side filtering
+      // This provides compatibility if the API doesn't support bbox queries
+      logger.warn('NWPS bounding box query failed, falling back to client-side filtering', {
+        error: error instanceof Error ? error.message : String(error)
+      });
+
+      const allGauges = await this.getAllNWPSGauges();
+      const filtered = allGauges.filter(gauge =>
+        gauge.longitude >= west &&
+        gauge.longitude <= east &&
+        gauge.latitude >= south &&
+        gauge.latitude <= north
+      );
+
+      // Cache the filtered result
+      if (CacheConfig.enabled) {
+        const cacheKey = Cache.generateKey('nwps-gauges-bbox', bboxKey);
+        this.cache.set(cacheKey, filtered, 86400000);
+      }
+
+      return filtered;
+    }
   }
 
   /**

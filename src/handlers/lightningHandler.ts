@@ -13,7 +13,7 @@ import {
 } from '../types/lightning.js';
 import { blitzortungService } from '../services/blitzortung.js';
 import { validateLatitude, validateLongitude } from '../utils/validation.js';
-import { logger } from '../utils/logger.js';
+import { logger, redactCoordinatesForLogging } from '../utils/logger.js';
 import { ValidationError } from '../errors/ApiError.js';
 
 /**
@@ -172,9 +172,11 @@ export async function getLightningActivity(params: LightningActivityParams): Pro
 
   const { latitude, longitude, radius = 100, timeWindow = 60 } = params;
 
+  // Redact coordinates for logging to protect user privacy
+  const redacted = redactCoordinatesForLogging(latitude, longitude);
   logger.info('Lightning activity requested', {
-    latitude,
-    longitude,
+    latitude: redacted.lat,
+    longitude: redacted.lon,
     radius,
     timeWindow
   });

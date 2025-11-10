@@ -7,7 +7,7 @@ This document provides context and guidelines for AI assistants (Claude, etc.) w
 **Weather MCP Server** is a Model Context Protocol (MCP) server providing weather data from NOAA and Open-Meteo APIs. It enables AI assistants to fetch real-time weather forecasts, current conditions, historical data, air quality, marine conditions, and severe weather alerts.
 
 - **Language:** TypeScript (Node.js)
-- **Version:** 1.6.0 (Production Ready)
+- **Version:** 1.6.1 (Production Ready)
 - **License:** MIT
 - **MCP SDK:** @modelcontextprotocol/sdk v1.21.0
 
@@ -383,7 +383,7 @@ npm audit             # No critical vulnerabilities
 
 ## Project Status
 
-- **Version:** 1.6.0
+- **Version:** 1.6.1
 - **Status:** Production Ready ✅
 - **Security Rating:** A- (Excellent, 93/100)
 - **Test Coverage:** 1,042 tests, 100% pass rate
@@ -409,6 +409,6 @@ npm audit             # No critical vulnerabilities
 
 ---
 
-**Last Updated:** 2025-11-10 (v1.6.0 release)
+**Last Updated:** 2025-11-10 (v1.6.1 release)
 
 This document should be updated whenever major architectural changes are made or new patterns are introduced.

@@ -37,11 +37,22 @@ export async function handleGetRiverConditions(
   output += `**Search Radius:** ${radius} km (${(radius * 0.621371).toFixed(1)} miles)\n\n`;
 
   try {
-    // Get all NWPS gauges and filter by distance
-    const allGauges = await noaaService.getAllNWPSGauges();
+    // Calculate bounding box for the search radius
+    // 1 degree of latitude ≈ 111 km, 1 degree of longitude varies by latitude
+    const latDelta = radius / 111; // Convert radius from km to degrees latitude
+    const lonDelta = radius / (111 * Math.cos(latitude * Math.PI / 180)); // Adjust for latitude
 
-    // Calculate distance to each gauge and filter by radius
-    const gaugesWithDistance = allGauges
+    const west = Math.max(-180, longitude - lonDelta);
+    const east = Math.min(180, longitude + lonDelta);
+    const south = Math.max(-90, latitude - latDelta);
+    const north = Math.min(90, latitude + latDelta);
+
+    // Get gauges within bounding box (much more efficient than downloading all gauges)
+    const gaugesInBox = await noaaService.getNWPSGaugesInBoundingBox(west, south, east, north);
+
+    // Calculate precise distance to each gauge and filter by radius
+    // (bounding box is a square, but we want a circle)
+    const gaugesWithDistance = gaugesInBox
       .map(gauge => ({
         gauge,
         distance: calculateDistance(latitude, longitude, gauge.latitude, gauge.longitude)

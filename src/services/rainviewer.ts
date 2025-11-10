@@ -82,6 +82,7 @@ export class RainViewerService {
 
   /**
    * Build tile URL for a specific coordinate
+   * Clamps latitude to Web Mercator projection range to prevent NaN tile coordinates
    */
   buildCoordinateTileUrl(
     frame: RainViewerFrame,
@@ -89,10 +90,23 @@ export class RainViewerService {
     longitude: number,
     zoom: number = 6
   ): string {
+    // Web Mercator projection is undefined at the poles
+    // Clamp latitude to safe range (±85.05112878°) to avoid division by zero
+    const MAX_LATITUDE = 85.05112878;
+    const clampedLat = Math.max(-MAX_LATITUDE, Math.min(MAX_LATITUDE, latitude));
+
+    if (clampedLat !== latitude) {
+      logger.warn('Latitude clamped to Web Mercator safe range', {
+        original: latitude,
+        clamped: clampedLat,
+        maxLatitude: MAX_LATITUDE
+      });
+    }
+
     // Convert lat/lon to tile coordinates
     const x = Math.floor(((longitude + 180) / 360) * 2 ** zoom);
     const y = Math.floor(
-      ((1 - Math.log(Math.tan((latitude * Math.PI) / 180) + 1 / Math.cos((latitude * Math.PI) / 180)) / Math.PI) / 2) *
+      ((1 - Math.log(Math.tan((clampedLat * Math.PI) / 180) + 1 / Math.cos((clampedLat * Math.PI) / 180)) / Math.PI) / 2) *
         2 ** zoom
     );
 
