@@ -118,7 +118,7 @@ describe('Tool Configuration', () => {
       const toolConfig = await createToolConfig('all');
 
       const enabled = toolConfig.getEnabledTools();
-      expect(enabled).toHaveLength(10);
+      expect(enabled).toHaveLength(12); // Updated for v1.6.0: added get_river_conditions and get_wildfire_info
       expect(enabled).toContain('get_forecast');
       expect(enabled).toContain('get_current_conditions');
       expect(enabled).toContain('get_alerts');
@@ -129,6 +129,8 @@ describe('Tool Configuration', () => {
       expect(enabled).toContain('get_marine_conditions');
       expect(enabled).toContain('get_weather_imagery');
       expect(enabled).toContain('get_lightning_activity');
+      expect(enabled).toContain('get_river_conditions');
+      expect(enabled).toContain('get_wildfire_info');
     });
   });
 
@@ -205,7 +207,7 @@ describe('Tool Configuration', () => {
       const toolConfig = await createToolConfig('all,-get_marine_conditions');
 
       const enabled = toolConfig.getEnabledTools();
-      expect(enabled).toHaveLength(9);
+      expect(enabled).toHaveLength(11); // Updated for v1.6.0: 12 total tools - 1 removed = 11
       expect(enabled).not.toContain('get_marine_conditions');
       expect(enabled).toContain('get_forecast');
       expect(enabled).toContain('get_air_quality');
