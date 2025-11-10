@@ -169,7 +169,7 @@ Control which MCP tools are exposed to reduce context overhead and customize fun
 - `basic` (default): Essential weather tools (5 tools) - forecast, current_conditions, alerts, search_location, check_service_status
 - `standard`: Basic + historical_weather (6 tools)
 - `full`: Standard + air_quality (7 tools)
-- `all`: All available tools (10 tools) - includes marine_conditions, weather_imagery, lightning_activity
+- `all`: All available tools (12 tools) - includes marine_conditions, weather_imagery, lightning_activity, river_conditions, wildfire_info
 
 **Configuration Examples:**
 
@@ -869,7 +869,7 @@ Use the `check_service_status` tool to proactively verify API availability:
 
 ### Automated Test Suite
 
-This project includes a comprehensive test suite with 722 automated tests:
+This project includes a comprehensive test suite with 1,042 automated tests:
 
 ```bash
 # Run all tests
@@ -886,14 +886,14 @@ npm run test:ui
 ```
 
 **Test Coverage:**
-- **722 tests** across unit and integration test suites (29 new tests in v1.2.1)
-- **100% coverage** on critical utilities (cache, validation, units, errors, normals, snow, timezone)
-- **54% overall coverage** with focus on reliability and security
-- All tests execute in ~1 second
+- **1,042 tests** across unit and integration test suites (111 new tests in v1.6.0)
+- **100% coverage** on critical utilities (cache, validation, units, errors, normals, snow, timezone, distance, geohash, security)
+- **100% pass rate** with comprehensive security and boundary validation
+- All tests execute in ~2 seconds
 
 **Test Categories:**
-- **Unit Tests** (427 tests) - Cache, validation, units, errors, config, retry logic, normals, snow, timezone
-- **Integration Tests** (19 tests) - Error recovery scenarios, service status checks
+- **Unit Tests** (965 tests) - Cache, validation, units, errors, config, retry logic, normals, snow, timezone, distance, security, geohash
+- **Integration Tests** (77 tests) - Error recovery, service status checks, safety & hazards features
 
 ### Quick API Connectivity Test
 
