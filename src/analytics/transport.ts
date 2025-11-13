@@ -3,7 +3,6 @@
  * Sends batched events to analytics collection server
  */
 
-import http from 'http';
 import https from 'https';
 import { logger } from '../utils/logger.js';
 import { AnalyticsEvent } from './types.js';
@@ -26,12 +25,18 @@ export async function sendBatch(
 
     try {
       const url = new URL(endpoint);
-      const isHttps = url.protocol === 'https:';
-      const lib = isHttps ? https : http;
 
-      const options = {
+      // SECURITY: Only allow HTTPS for analytics transmission (H-1)
+      if (url.protocol !== 'https:') {
+        const error = new Error(`Analytics endpoint must use HTTPS for secure transmission (got ${url.protocol})`);
+        logger.error('Analytics endpoint must use HTTPS', error);
+        reject(error);
+        return;
+      }
+
+      const options: https.RequestOptions = {
         hostname: url.hostname,
-        port: url.port || (isHttps ? 443 : 80),
+        port: url.port || 443,
         path: url.pathname + url.search,
         method: 'POST',
         headers: {
@@ -40,9 +45,11 @@ export async function sendBatch(
           'User-Agent': `weather-mcp/${version}`,
         },
         timeout: 5000, // 5 second timeout
+        // SECURITY: Explicitly require valid certificates (H-2)
+        rejectUnauthorized: true,
       };
 
-      const req = lib.request(options, (res) => {
+      const req = https.request(options, (res) => {
         let responseData = '';
 
         // Consume response data

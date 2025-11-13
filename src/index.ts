@@ -34,7 +34,7 @@ import { getWeatherImagery, formatWeatherImageryResponse } from './handlers/weat
 import { getLightningActivity, formatLightningActivityResponse } from './handlers/lightningHandler.js';
 import { handleGetRiverConditions } from './handlers/riverConditionsHandler.js';
 import { handleGetWildfireInfo } from './handlers/wildfireHandler.js';
-import { withAnalytics } from './analytics/index.js';
+import { withAnalytics, analytics } from './analytics/index.js';
 
 /**
  * Server information
@@ -621,12 +621,16 @@ async function main() {
     logger.info(`Received ${signal}, shutting down gracefully...`);
 
     try {
-      // Clean up resources
+      // 1. Flush analytics first (fast)
+      await analytics.shutdown();
+      logger.info('Analytics flushed');
+
+      // 2. Clean up resources
       noaaService.clearCache();
       openMeteoService.clearCache();
       logger.info('Cache cleared');
 
-      // Close server connection
+      // 3. Close server connection
       await server.close();
       logger.info('Server closed');
 

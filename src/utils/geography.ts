@@ -245,3 +245,69 @@ export function getGreatLakesRegions(): GeographicRegion[] {
 export function getMajorCoastalBayRegions(): GeographicRegion[] {
   return MAJOR_COASTAL_BAYS;
 }
+
+/**
+ * Approximate country/region detection from coordinates
+ * PRIVACY: Intentionally vague - only major regions for privacy
+ * ACCURACY: This is a ROUGH approximation with known inaccuracies:
+ *   - Mexico, Caribbean, Central America -> OTHER
+ *   - Some border regions may be misclassified
+ *   - Alaska and Hawaii have special handling
+ *
+ * This is called OUTSIDE the analytics module to ensure coordinates
+ * never enter the analytics boundary. Trade-off: Privacy (no reverse geocoding)
+ * vs Accuracy (bounding boxes)
+ *
+ * @param lat Latitude (-90 to 90)
+ * @param lon Longitude (-180 to 180)
+ * @returns ISO 3166-1 alpha-2 region code (US, CA, EU, AP, SA, AF, OC, OTHER)
+ */
+export function getCountryFromCoordinates(lat: number, lon: number): string {
+  // Handle Alaska (49°N+, west of 130°W)
+  if (lat >= 49 && lon <= -130 && lon >= -180) {
+    return 'US';
+  }
+
+  // Handle Hawaii (18-23°N, 154-162°W)
+  if (lat >= 18 && lat <= 23 && lon >= -162 && lon <= -154) {
+    return 'US';
+  }
+
+  // Continental US: Approximately 25-49°N, 125-66°W
+  if (lat >= 24 && lat <= 50 && lon >= -125 && lon <= -66) {
+    return 'US';
+  }
+
+  // Canada: Approximately 42-83°N, 141-52°W
+  if (lat >= 41 && lat <= 84 && lon >= -142 && lon <= -52) {
+    return 'CA';
+  }
+
+  // Europe: Approximately 35-71°N, 10°W-40°E
+  if (lat >= 35 && lat <= 72 && lon >= -11 && lon <= 41) {
+    return 'EU';
+  }
+
+  // Asia-Pacific: Rough approximation
+  if (lat >= -10 && lat <= 55 && lon >= 60 && lon <= 180) {
+    return 'AP';
+  }
+
+  // South America: Approximate
+  if (lat >= -56 && lat <= 13 && lon >= -82 && lon <= -34) {
+    return 'SA';
+  }
+
+  // Africa: Approximate
+  if (lat >= -35 && lat <= 38 && lon >= -18 && lon <= 52) {
+    return 'AF';
+  }
+
+  // Australia/Oceania: Approximate
+  if (lat >= -48 && lat <= -10 && lon >= 112 && lon <= 180) {
+    return 'OC';
+  }
+
+  // Default to OTHER for privacy (intentionally vague)
+  return 'OTHER';
+}

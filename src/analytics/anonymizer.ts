@@ -36,18 +36,14 @@ export function anonymizeEvent(
   level: AnalyticsLevel
 ): AnalyticsEvent {
   // Base event (minimal level) - always included
-  const baseEvent: AnalyticsEvent = {
-    version: rawData.version!,
+  const baseEvent = {
+    version: rawData.version,
     tool: rawData.tool,
     status: rawData.status,
-    timestamp_hour: rawData.timestamp_hour!,
-    analytics_level: level,
+    timestamp_hour: rawData.timestamp_hour,
+    analytics_level: 'minimal' as const,
+    ...(rawData.status === 'error' && rawData.error_type ? { error_type: rawData.error_type } : {}),
   };
-
-  // Add error type for error events (all levels)
-  if (rawData.status === 'error' && rawData.error_type) {
-    baseEvent.error_type = rawData.error_type;
-  }
 
   // Return minimal level (no additional data)
   if (level === 'minimal') {
@@ -55,26 +51,15 @@ export function anonymizeEvent(
   }
 
   // Standard level - add performance metrics
-  const standardEvent: AnalyticsEvent = {
+  const standardEvent = {
     ...baseEvent,
-    analytics_level: level,
+    analytics_level: 'standard' as const,
+    ...(rawData.response_time_ms !== undefined && { response_time_ms: rawData.response_time_ms }),
+    ...(rawData.service && { service: rawData.service }),
+    ...(rawData.cache_hit !== undefined && { cache_hit: rawData.cache_hit }),
+    ...(rawData.retry_count !== undefined && { retry_count: rawData.retry_count }),
+    ...(rawData.country && { country: rawData.country }),
   };
-
-  if (rawData.response_time_ms !== undefined) {
-    (standardEvent as any).response_time_ms = rawData.response_time_ms;
-  }
-  if (rawData.service) {
-    (standardEvent as any).service = rawData.service;
-  }
-  if (rawData.cache_hit !== undefined) {
-    (standardEvent as any).cache_hit = rawData.cache_hit;
-  }
-  if (rawData.retry_count !== undefined) {
-    (standardEvent as any).retry_count = rawData.retry_count;
-  }
-  if (rawData.country) {
-    (standardEvent as any).country = rawData.country;
-  }
 
   // Return standard level
   if (level === 'standard') {
@@ -82,20 +67,13 @@ export function anonymizeEvent(
   }
 
   // Detailed level - add anonymized workflow data
-  const detailedEvent: AnalyticsEvent = {
+  const detailedEvent = {
     ...standardEvent,
-    analytics_level: 'detailed',
+    analytics_level: 'detailed' as const,
+    ...(rawData.parameters && { parameters: sanitizeParameters(rawData.parameters) }),
+    ...(rawData.session_id && { session_id: hashSessionId(rawData.session_id) }),
+    ...(rawData.sequence_number !== undefined && { sequence_number: rawData.sequence_number }),
   };
-
-  if (rawData.parameters) {
-    (detailedEvent as any).parameters = sanitizeParameters(rawData.parameters);
-  }
-  if (rawData.session_id) {
-    (detailedEvent as any).session_id = hashSessionId(rawData.session_id);
-  }
-  if (rawData.sequence_number !== undefined) {
-    (detailedEvent as any).sequence_number = rawData.sequence_number;
-  }
 
   return detailedEvent;
 }
@@ -148,59 +126,19 @@ function sanitizeParameters(params: Record<string, unknown>): Record<string, unk
  * Cannot be reversed to identify users
  */
 function hashSessionId(sessionId: string, salt?: string): string {
-  // Use environment salt or generate a consistent one
-  const sessionSalt = salt || process.env.ANALYTICS_SALT || 'weather-mcp-default-salt';
+  // Salt should always be provided by config (auto-generated)
+  // Fallback to environment variable if somehow not provided
+  const sessionSalt = salt || process.env.ANALYTICS_SALT || '';
+
+  if (!sessionSalt) {
+    throw new Error('Analytics salt must be provided for session ID hashing');
+  }
 
   return crypto
     .createHash('sha256')
     .update(sessionId + sessionSalt)
     .digest('hex')
     .substring(0, 16); // Shortened for storage efficiency
-}
-
-/**
- * Approximate country detection from coordinates
- * PRIVACY: Intentionally vague - only major regions
- * This is only called once during session initialization, not per-event
- */
-export function getCountryFromCoordinates(lat: number, lon: number): string {
-  // US: Approximately 25-49°N, 125-66°W
-  if (lat >= 24 && lat <= 50 && lon >= -125 && lon <= -66) {
-    return 'US';
-  }
-
-  // Canada: Approximately 42-83°N, 141-52°W
-  if (lat >= 41 && lat <= 84 && lon >= -142 && lon <= -52) {
-    return 'CA';
-  }
-
-  // Europe: Approximately 35-71°N, 10°W-40°E
-  if (lat >= 35 && lat <= 72 && lon >= -11 && lon <= 41) {
-    return 'EU';
-  }
-
-  // Asia-Pacific: Rough approximation
-  if (lat >= -10 && lat <= 55 && lon >= 60 && lon <= 180) {
-    return 'AP';
-  }
-
-  // South America: Approximate
-  if (lat >= -56 && lat <= 13 && lon >= -82 && lon <= -34) {
-    return 'SA';
-  }
-
-  // Africa: Approximate
-  if (lat >= -35 && lat <= 38 && lon >= -18 && lon <= 52) {
-    return 'AF';
-  }
-
-  // Australia/Oceania: Approximate
-  if (lat >= -48 && lat <= -10 && lon >= 112 && lon <= 180) {
-    return 'OC';
-  }
-
-  // Default to OTHER for privacy (intentionally vague)
-  return 'OTHER';
 }
 
 /**
