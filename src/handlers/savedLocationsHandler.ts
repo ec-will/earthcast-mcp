@@ -15,6 +15,7 @@ interface SaveLocationArgs {
   description?: string;
   alternateNames?: string[];
   notes?: string;
+  activities?: string[];
 }
 
 interface GetLocationArgs {
@@ -71,6 +72,44 @@ export async function handleSaveLocation(
     throw new Error('alias must be 50 characters or less');
   }
 
+  // Validate activities if provided
+  let activities: string[] | undefined;
+  let activitiesProvided = false;
+  if (saveArgs.activities !== undefined) {
+    activitiesProvided = true;
+    if (!Array.isArray(saveArgs.activities)) {
+      throw new Error('activities must be an array of strings');
+    }
+
+    // Validate each activity
+    const validatedActivities: string[] = [];
+    for (const activity of saveArgs.activities) {
+      if (typeof activity !== 'string') {
+        throw new Error('Each activity must be a string');
+      }
+      const trimmed = activity.trim();
+      if (trimmed.length === 0) {
+        continue; // Skip empty strings
+      }
+      if (trimmed.length > 50) {
+        throw new Error('Each activity must be 50 characters or less');
+      }
+      validatedActivities.push(trimmed.toLowerCase());
+    }
+
+    // Only set activities if there are valid ones
+    if (validatedActivities.length > 0) {
+      activities = validatedActivities;
+    }
+    // If empty array provided, activities stays undefined but activitiesProvided is true
+  }
+
+  // Check for partial update mode (updating existing location without re-specifying coordinates)
+  const hasLocationDetails = saveArgs.location_query ||
+    (typeof saveArgs.latitude === 'number' && typeof saveArgs.longitude === 'number');
+  const existingLocation = locationStore.get(alias);
+  const isPartialUpdate = existingLocation && !hasLocationDetails;
+
   let latitude: number;
   let longitude: number;
   let name: string;
@@ -79,8 +118,22 @@ export async function handleSaveLocation(
   let admin1: string | undefined;
   let admin2: string | undefined;
 
-  // Determine how to get coordinates
-  if (saveArgs.location_query && typeof saveArgs.location_query === 'string') {
+  if (isPartialUpdate) {
+    // Partial update: preserve existing location data, only update specified fields
+    latitude = existingLocation.latitude;
+    longitude = existingLocation.longitude;
+    name = saveArgs.name || existingLocation.name;
+    timezone = existingLocation.timezone;
+    country_code = existingLocation.country_code;
+    admin1 = existingLocation.admin1;
+    admin2 = existingLocation.admin2;
+
+    // If activities not provided, preserve existing ones
+    // If activities provided (even if empty array), use the new value (which may be undefined)
+    if (!activitiesProvided) {
+      activities = existingLocation.activities;
+    }
+  } else if (saveArgs.location_query && typeof saveArgs.location_query === 'string') {
     // Geocode the query
     const query = saveArgs.location_query.trim();
     const results = await nominatimService.searchLocation(query, 1);
@@ -138,10 +191,19 @@ export async function handleSaveLocation(
     admin2,
     description: saveArgs.description,
     alternateNames: saveArgs.alternateNames,
-    notes: saveArgs.notes
+    notes: saveArgs.notes,
+    activities
   });
 
-  let output = `# ${isUpdate ? 'Updated' : 'Saved'} Location\n\n`;
+  // Determine what type of operation this was
+  let operationType = 'Saved';
+  if (isPartialUpdate) {
+    operationType = 'Updated';
+  } else if (isUpdate) {
+    operationType = 'Updated';
+  }
+
+  let output = `# ${operationType} Location\n\n`;
   output += `**Alias:** \`${escapeMarkdown(alias)}\`\n`;
   output += `**Name:** ${escapeMarkdown(name)}\n`;
   output += `**Coordinates:** ${latitude.toFixed(4)}°, ${longitude.toFixed(4)}°\n`;
@@ -170,6 +232,10 @@ export async function handleSaveLocation(
     output += `**Notes:** ${escapeMarkdown(saveArgs.notes)}\n`;
   }
 
+  if (activities && activities.length > 0) {
+    output += `**Activities:** ${activities.map(a => escapeMarkdown(a)).join(', ')}\n`;
+  }
+
   output += `\n`;
   output += `---\n\n`;
   output += `This location is now saved and can be used with any weather tool:\n\n`;
@@ -177,6 +243,11 @@ export async function handleSaveLocation(
   output += `- \`get_current_conditions(location_name="${alias}")\`\n`;
   output += `- \`get_alerts(location_name="${alias}")\`\n`;
   output += `- And all other weather tools\n\n`;
+
+  if (activities && activities.length > 0) {
+    output += `The activities you've tagged will help the AI provide relevant weather information.\n\n`;
+  }
+
   output += `*Storage location: ${locationStore.getStorePath()}*\n`;
 
   return {
@@ -248,6 +319,10 @@ export async function handleListSavedLocations(
 
     if (location.notes) {
       output += `**Notes:** ${escapeMarkdown(location.notes)}\n`;
+    }
+
+    if (location.activities && location.activities.length > 0) {
+      output += `**Activities:** ${location.activities.map(a => escapeMarkdown(a)).join(', ')}\n`;
     }
 
     output += `**Saved:** ${new Date(location.saved_at).toLocaleDateString()}\n`;
@@ -335,6 +410,10 @@ export async function handleGetSavedLocation(
 
   if (location.notes) {
     output += `**Notes:** ${escapeMarkdown(location.notes)}\n`;
+  }
+
+  if (location.activities && location.activities.length > 0) {
+    output += `**Activities:** ${location.activities.map(a => escapeMarkdown(a)).join(', ')}\n`;
   }
 
   output += `**Saved:** ${new Date(location.saved_at).toLocaleString()}\n`;

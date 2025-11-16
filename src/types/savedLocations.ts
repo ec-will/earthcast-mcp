@@ -26,6 +26,8 @@ export interface SavedLocation {
   alternateNames?: string[];
   /** Freeform notes about this location */
   notes?: string;
+  /** Activities done at this location (e.g., ["boating", "fishing", "hiking"]) */
+  activities?: string[];
   /** When this location was saved */
   saved_at: string;
   /** When this location was last updated */
