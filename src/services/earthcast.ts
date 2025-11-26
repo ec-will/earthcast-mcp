@@ -14,6 +14,15 @@ import {
   ServiceUnavailableError,
   RateLimitError,
 } from '../errors/ApiError.js';
+import type {
+  GoNoGoArgs,
+  ForecastQueryArgs,
+  WeatherQueryArgs,
+  ProductTimestampArgs,
+  GoNoGoResponse,
+  GeodataResponse,
+  ProductTimestampResponse,
+} from '../types/earthcast.js';
 
 /**
  * Configuration for Earthcast Technologies API
@@ -51,55 +60,187 @@ export class EarthcastService {
   }
 
   /**
-   * Example method: Fetch environmental data
-   * TODO: Replace with actual Earthcast API endpoints
+   * Get Go/No-Go launch decision support
    * 
-   * @param latitude - Latitude coordinate
-   * @param longitude - Longitude coordinate
-   * @returns Environmental data response
+   * @param params - Go/No-Go query parameters
+   * @returns Go/No-Go decision response
    */
-  async getEnvironmentalData(
-    latitude: number,
-    longitude: number
-  ): Promise<any> {
-    // Generate cache key
-    const cacheKey = Cache.generateKey('ect_env', latitude, longitude);
+  async getGoNoGoDecision(params: GoNoGoArgs): Promise<GoNoGoResponse> {
+    const cacheKey = Cache.generateKey('gonogo', JSON.stringify(params));
 
-    // Check cache first
     if (CacheConfig.enabled) {
       const cached = this.cache.get(cacheKey);
       if (cached) {
-        logger.debug('Cache hit for environmental data', { latitude, longitude });
-        return cached;
+        logger.debug('Cache hit for Go/No-Go decision');
+        return cached as GoNoGoResponse;
       }
     }
 
-    // Make API call with retry logic
     try {
       const data = await this.retryWithBackoff(async () => {
-        const url = `${this.baseUrl}/api/environmental`; // TODO: Update with actual endpoint
-        const apiTimeout = parseInt(process.env.API_TIMEOUT_MS || '30000', 10);
-        const response = await axios.get(url, {
-          params: { latitude, longitude },
-          timeout: apiTimeout,
-          headers: {
-            'User-Agent': 'earthcast-mcp/0.1.0',
-          },
-        });
-        return response.data;
+        const response = await this.request<GoNoGoResponse>(
+          '/weather/dss/launch/gonogo',
+          params as unknown as Record<string, unknown>
+        );
+        return response;
       });
 
-      // Cache the result
       if (CacheConfig.enabled) {
-        this.cache.set(cacheKey, data, ECT_DATA_TTL);
-        logger.debug('Cached environmental data', { latitude, longitude });
+        // Cache for 5 minutes (decision support is time-sensitive)
+        this.cache.set(cacheKey, data, 5 * 60 * 1000);
       }
 
       return data;
     } catch (error) {
-      logger.error('Failed to fetch environmental data');
+      logger.error('Failed to fetch Go/No-Go decision');
       throw this.handleApiError(error);
     }
+  }
+
+  /**
+   * Get latest forecast data for a product
+   * 
+   * @param params - Forecast query parameters
+   * @returns Geospatial forecast data
+   */
+  async getForecastData(params: ForecastQueryArgs): Promise<GeodataResponse> {
+    const cacheKey = Cache.generateKey('forecast', JSON.stringify(params));
+
+    if (CacheConfig.enabled) {
+      const cached = this.cache.get(cacheKey);
+      if (cached) {
+        logger.debug('Cache hit for forecast data', { product: params.product });
+        return cached as GeodataResponse;
+      }
+    }
+
+    try {
+      const data = await this.retryWithBackoff(async () => {
+        const response = await this.request<GeodataResponse>(
+          '/weather/query/forecast',
+          params as unknown as Record<string, unknown>
+        );
+        return response;
+      });
+
+      if (CacheConfig.enabled) {
+        // Cache forecasts for 2 hours
+        this.cache.set(cacheKey, data, 2 * ECT_DATA_TTL);
+      }
+
+      return data;
+    } catch (error) {
+      logger.error('Failed to fetch forecast data');
+      throw this.handleApiError(error);
+    }
+  }
+
+  /**
+   * Query weather data for one or more products
+   * 
+   * @param params - Weather data query parameters
+   * @returns Geospatial weather data
+   */
+  async queryWeatherData(params: WeatherQueryArgs): Promise<GeodataResponse> {
+    const cacheKey = Cache.generateKey('weather_query', JSON.stringify(params));
+
+    if (CacheConfig.enabled) {
+      const cached = this.cache.get(cacheKey);
+      if (cached) {
+        logger.debug('Cache hit for weather data query');
+        return cached as GeodataResponse;
+      }
+    }
+
+    try {
+      const data = await this.retryWithBackoff(async () => {
+        const response = await this.request<GeodataResponse>(
+          '/weather/query/request',
+          params as unknown as Record<string, unknown>
+        );
+        return response;
+      });
+
+      if (CacheConfig.enabled) {
+        // Cache for 1 hour (current/recent data)
+        this.cache.set(cacheKey, data, ECT_DATA_TTL);
+      }
+
+      return data;
+    } catch (error) {
+      logger.error('Failed to query weather data');
+      throw this.handleApiError(error);
+    }
+  }
+
+  /**
+   * Get latest timestamp for a product
+   * 
+   * @param params - Product timestamp parameters
+   * @returns Product timestamp
+   */
+  async getProductTimestamp(
+    params: ProductTimestampArgs
+  ): Promise<ProductTimestampResponse> {
+    const cacheKey = Cache.generateKey('timestamp', params.product);
+
+    if (CacheConfig.enabled) {
+      const cached = this.cache.get(cacheKey);
+      if (cached) {
+        logger.debug('Cache hit for product timestamp', { product: params.product });
+        return cached as ProductTimestampResponse;
+      }
+    }
+
+    try {
+      const data = await this.retryWithBackoff(async () => {
+        const response = await this.request<ProductTimestampResponse>(
+          '/weather/product/timestamp',
+          params as unknown as Record<string, unknown>
+        );
+        return response;
+      });
+
+      if (CacheConfig.enabled) {
+        // Cache timestamps for 15 minutes
+        this.cache.set(cacheKey, data, 15 * 60 * 1000);
+      }
+
+      return data;
+    } catch (error) {
+      logger.error('Failed to fetch product timestamp');
+      throw this.handleApiError(error);
+    }
+  }
+
+  /**
+   * Make an authenticated API request
+   * 
+   * @param endpoint - API endpoint path
+   * @param params - Query parameters
+   * @returns API response data
+   */
+  private async request<T>(
+    endpoint: string,
+    params: Record<string, unknown>
+  ): Promise<T> {
+    const url = `${this.baseUrl}${endpoint}`;
+    const apiTimeout = parseInt(process.env.API_TIMEOUT_MS || '30000', 10);
+    
+    // Get auth credentials from environment
+    const username = process.env.ECT_API_USERNAME;
+    const password = process.env.ECT_API_PASSWORD;
+
+    const response = await axios.get(url, {
+      params,
+      timeout: apiTimeout,
+      headers: {
+        'User-Agent': 'earthcast-mcp/0.1.0',
+      },
+      auth: username && password ? { username, password } : undefined,
+    });
+
+    return response.data;
   }
 
   /**
