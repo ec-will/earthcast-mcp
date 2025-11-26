@@ -21,6 +21,7 @@ import { NCEIService } from './services/ncei.js';
 import { NIFCService } from './services/nifc.js';
 import { GeocodingService } from './services/geocoding.js';
 import { LocationStore } from './services/locationStore.js';
+import { EarthcastService } from './services/earthcast.js';
 import { CacheConfig } from './config/cache.js';
 import { toolConfig } from './config/tools.js';
 import { logger } from './utils/logger.js';
@@ -43,6 +44,8 @@ import {
   handleGetSavedLocation,
   handleRemoveSavedLocation
 } from './handlers/savedLocationsHandler.js';
+import { handleEarthcastDataQuery } from './handlers/earthcastDataHandler.js';
+import { handleGoNoGoDecision } from './handlers/earthcastGoNoGoHandler.js';
 import { withAnalytics, analytics } from './analytics/index.js';
 
 /**
@@ -59,7 +62,7 @@ const packageJson = JSON.parse(
   readFileSync(join(__dirname, '../package.json'), 'utf-8')
 );
 
-const SERVER_NAME = 'weather-mcp';
+const SERVER_NAME = 'earthcast-mcp';
 const SERVER_VERSION = packageJson.version;
 
 /**
@@ -138,6 +141,13 @@ const nifcService = new NIFCService();
  * Automatic fallback strategy for maximum reliability
  */
 const geocodingService = new GeocodingService();
+
+/**
+ * Initialize the Earthcast Technologies service
+ * Requires HTTP Basic Auth credentials via environment variables
+ * Provides access to specialized environmental and weather data
+ */
+const earthcastService = new EarthcastService();
 
 /**
  * Create MCP server instance
@@ -640,6 +650,136 @@ const TOOL_DEFINITIONS = {
       },
       required: ['alias']
     }
+  },
+
+  earthcast_query_data: {
+    name: 'earthcast_query_data' as const,
+    description: 'Query specialized environmental and weather data from Earthcast Technologies API. Supports multiple products including lightning density, contrails, ionospheric density, neutral atmospheric density (100-1000km altitude), wind shear, turbulence, and radar reflectivity. Use this for advanced weather data, launch support, or specialized environmental conditions. Requires either bounding box or lat/lon coordinates for spatial filtering. Supports altitude, time, and resolution filtering.',
+    inputSchema: {
+      type: 'object' as const,
+      properties: {
+        products: {
+          type: 'string' as const,
+          description: 'One or more product keys (comma-separated). Available products: lightning_density, contrails_max, contrails, ionospheric_density, neutral_density, low-level-windshear, high-level-windshear, turbulence_max, reflectivity_5k',
+        },
+        latitude: {
+          type: 'number' as const,
+          description: 'Center latitude for query (-90 to 90). Not required if bbox is provided.',
+          minimum: -90,
+          maximum: 90
+        },
+        longitude: {
+          type: 'number' as const,
+          description: 'Center longitude for query (-180 to 180). Not required if bbox is provided.',
+          minimum: -180,
+          maximum: 180
+        },
+        bbox: {
+          type: 'string' as const,
+          description: 'Bounding box as "west,south,east,north" (e.g., "-82,28,-78,32"). Alternative to lat/lon.'
+        },
+        radius: {
+          type: 'number' as const,
+          description: 'Radius in kilometers (requires lat/lon). Default depends on resolution.'
+        },
+        altitude: {
+          type: 'number' as const,
+          description: 'Single altitude in kilometers for altitude-dependent products'
+        },
+        altitude_min: {
+          type: 'number' as const,
+          description: 'Minimum altitude in kilometers (requires altitude_max)'
+        },
+        altitude_max: {
+          type: 'number' as const,
+          description: 'Maximum altitude in kilometers (requires altitude_min)'
+        },
+        date: {
+          type: 'string' as const,
+          description: 'ISO 8601 timestamp for specific time (e.g., "2025-05-26T12:00:00Z")'
+        },
+        date_start: {
+          type: 'string' as const,
+          description: 'Start of time range (ISO 8601)'
+        },
+        date_end: {
+          type: 'string' as const,
+          description: 'End of time range (ISO 8601)'
+        },
+        width: {
+          type: 'number' as const,
+          description: 'Output width in pixels (default: 100)'
+        },
+        height: {
+          type: 'number' as const,
+          description: 'Output height in pixels (default: auto)'
+        }
+      },
+      required: ['products']
+    }
+  },
+
+  earthcast_gonogo_decision: {
+    name: 'earthcast_gonogo_decision' as const,
+    description: 'Get Go/No-Go launch decision support from Earthcast Technologies. Evaluates multiple weather products against predefined thresholds to determine if conditions are acceptable for launch operations. Returns overall decision (GO or NO-GO) with individual product evaluations, threshold values, and confidence levels. Critical for launch planning and operational decision support.',
+    inputSchema: {
+      type: 'object' as const,
+      properties: {
+        products: {
+          type: 'string' as const,
+          description: 'One or more product keys to evaluate (comma-separated). Example: "reflectivity_5k,low-level-windshear"',
+        },
+        site_description: {
+          type: 'string' as const,
+          description: 'Launch site description (e.g., "Cape Canaveral LC-39A")'
+        },
+        latitude: {
+          type: 'number' as const,
+          description: 'Launch site latitude (-90 to 90). Not required if bbox is provided.',
+          minimum: -90,
+          maximum: 90
+        },
+        longitude: {
+          type: 'number' as const,
+          description: 'Launch site longitude (-180 to 180). Not required if bbox is provided.',
+          minimum: -180,
+          maximum: 180
+        },
+        bbox: {
+          type: 'string' as const,
+          description: 'Bounding box as "west,south,east,north". Alternative to lat/lon.'
+        },
+        radius: {
+          type: 'number' as const,
+          description: 'Radius in kilometers around launch site (requires lat/lon)'
+        },
+        altitude: {
+          type: 'number' as const,
+          description: 'Single altitude in kilometers'
+        },
+        altitude_min: {
+          type: 'number' as const,
+          description: 'Minimum altitude in kilometers'
+        },
+        altitude_max: {
+          type: 'number' as const,
+          description: 'Maximum altitude in kilometers'
+        },
+        date: {
+          type: 'string' as const,
+          description: 'ISO 8601 timestamp for evaluation time'
+        },
+        width: {
+          type: 'number' as const,
+          description: 'Output width in pixels'
+        },
+        height: {
+          type: 'number' as const,
+          description: 'Output height in pixels'
+        }
+      },
+      required: ['products']
+    }
   }
 };
 
@@ -766,6 +906,16 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
       case 'remove_saved_location':
         return await withAnalytics('remove_saved_location', async () =>
           handleRemoveSavedLocation(args, locationStore)
+        );
+
+      case 'earthcast_query_data':
+        return await withAnalytics('earthcast_query_data', async () =>
+          handleEarthcastDataQuery(args, earthcastService)
+        );
+
+      case 'earthcast_gonogo_decision':
+        return await withAnalytics('earthcast_gonogo_decision', async () =>
+          handleGoNoGoDecision(args, earthcastService)
         );
 
       default:
