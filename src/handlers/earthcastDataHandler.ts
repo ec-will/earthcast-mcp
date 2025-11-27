@@ -7,7 +7,6 @@ import { EarthcastService } from '../services/earthcast.js';
 import type {
   EarthcastDataToolArgs,
   WeatherQueryArgs,
-  GeodataResponse,
 } from '../types/earthcast.js';
 import { validateLatitude, validateLongitude } from '../utils/validation.js';
 import { logger } from '../utils/logger.js';
@@ -15,42 +14,92 @@ import { logger } from '../utils/logger.js';
 /**
  * Format geospatial data response for display
  */
-function formatGeodataResponse(data: GeodataResponse): string {
+function formatGeodataResponse(data: any): string {
   let output = '# Earthcast Weather Data\n\n';
 
-  // Add timestamp
-  output += `**Data Timestamp:** ${data.timestamp}\n\n`;
-
-  // Add products queried
-  output += `**Products:** ${data.products.join(', ')}\n\n`;
-
-  // Add metadata
-  if (data.data.metadata) {
-    output += '## Metadata\n\n';
+  // Add request info
+  if (data.requested) {
+    output += '## Request Parameters\n\n';
+    output += `**Products:** ${data.requested.products.join(', ')}\n`;
     
-    if (data.data.metadata.bounds) {
-      const [west, south, east, north] = data.data.metadata.bounds;
-      output += `**Bounds:** West: ${west}°, South: ${south}°, East: ${east}°, North: ${north}°\n`;
+    if (data.requested.lat_lon) {
+      const [lat, lon] = data.requested.lat_lon;
+      output += `**Location:** ${lat.toFixed(4)}°N, ${Math.abs(lon).toFixed(4)}°${lon >= 0 ? 'E' : 'W'}\n`;
     }
     
-    if (data.data.metadata.resolution) {
-      const [resX, resY] = data.data.metadata.resolution;
-      output += `**Resolution:** ${resX}° x ${resY}°\n`;
+    if (data.requested.radius_km) {
+      output += `**Radius:** ${data.requested.radius_km} km\n`;
     }
     
-    if (data.data.metadata.crs) {
-      output += `**Coordinate System:** ${data.data.metadata.crs}\n`;
+    if (data.requested.bbox) {
+      output += `**Bounding Box:** ${data.requested.bbox.join(', ')}\n`;
     }
     
     output += '\n';
   }
 
-  // Add note about raster data
-  if (data.data.raster) {
-    output += '## Raster Data\n\n';
-    output += 'GeoTIFF raster data is available (base64 encoded).\n';
-    output += `Data size: ${data.data.raster.length} characters\n\n`;
-    output += '*Note: The raster data contains the actual weather values and can be decoded and processed by GIS tools.*\n\n';
+  // Add conditions data
+  if (data.conditions) {
+    output += '## Weather Conditions\n\n';
+    
+    for (const [productName, productData] of Object.entries(data.conditions)) {
+      output += `### ${productName.replace(/_/g, ' ').toUpperCase()}\n\n`;
+      
+      const condition = productData as any;
+      
+      // Resolution info
+      if (condition.resolution_km) {
+        output += `**Resolution:** ${condition.resolution_km.east_west.toFixed(1)} km (E-W) × ${condition.resolution_km.north_south.toFixed(1)} km (N-S)\n`;
+      }
+      
+      if (condition.bbox) {
+        output += `**Area Bounds:** [${condition.bbox.map((v: number) => v.toFixed(2)).join(', ')}]\n`;
+      }
+      
+      if (condition.exception) {
+        output += `**⚠️ Error:** ${condition.exception}\n\n`;
+        continue;
+      }
+      
+      // Get timestamps (excluding metadata fields)
+      const timestamps = Object.keys(condition).filter(k => 
+        !['resolution_km', 'width', 'height', 'bbox', 'exception'].includes(k)
+      );
+      
+      for (const timestamp of timestamps) {
+        const timeData = condition[timestamp];
+        output += `\n**Data Time:** ${timestamp}\n\n`;
+        
+        // Handle altitude-dependent products
+        if (timeData.altitudes) {
+          output += '**Altitudes:**\n\n';
+          for (const [alt, altData] of Object.entries(timeData.altitudes)) {
+            const data = altData as any;
+            output += `- **${alt} km:** Avg: ${data.average_value?.toExponential(2) || 'N/A'}`;
+            
+            if (data.grid) {
+              const flatGrid = data.grid.flat();
+              const maxVal = Math.max(...flatGrid);
+              const minVal = Math.min(...flatGrid);
+              output += `, Range: ${minVal.toExponential(2)} - ${maxVal.toExponential(2)}`;
+            }
+            output += '\n';
+          }
+        } else if (timeData.average_value !== undefined) {
+          // Simple products with just average/grid
+          output += `**Average Value:** ${timeData.average_value?.toFixed(2)}\n`;
+          
+          if (timeData.grid) {
+            const flatGrid = timeData.grid.flat();
+            const maxVal = Math.max(...flatGrid);
+            const minVal = Math.min(...flatGrid);
+            output += `**Range:** ${minVal.toFixed(2)} - ${maxVal.toFixed(2)}\n`;
+          }
+        }
+        
+        output += '\n';
+      }
+    }
   }
 
   return output;
