@@ -4,12 +4,13 @@ This file provides guidance to WARP (warp.dev) when working with code in this re
 
 ## Project Overview
 
-**EarthCast MCP Server** - A Model Context Protocol server providing environmental and weather data from Earthcast Technologies API. Built with TypeScript and Node.js, enabling AI assistants to access specialized environmental data and forecasts.
+**Earthcast MCP Server** - A Model Context Protocol server combining global weather data (NOAA, Open-Meteo) with specialized environmental products from Earthcast Technologies API. Built with TypeScript and Node.js, enabling AI assistants to access comprehensive weather forecasts, current conditions, and advanced environmental data for launch operations, aviation planning, and space weather monitoring.
 
 - **Language**: TypeScript (Node.js >= 18.0.0)
 - **MCP SDK**: @modelcontextprotocol/sdk v1.21.1
-- **Test Framework**: Vitest
+- **Test Framework**: Vitest (31 test files)
 - **Package Manager**: npm
+- **Version**: 0.1.0
 
 ## Common Development Commands
 
@@ -22,11 +23,10 @@ npm start           # Run compiled dist/index.js
 
 ### Testing
 ```bash
-npm test                    # Run all tests (1,042 automated tests)
+npm test                    # Run all tests (31 test files)
 npm run test:watch         # Watch mode for development
 npm run test:coverage      # Generate coverage report
 npm run test:ui            # Interactive test UI
-npx tsx tests/test_noaa_api.ts  # Quick API connectivity test
 ```
 
 ### Maintenance
@@ -48,7 +48,7 @@ Handler (src/handlers/*.ts) - validates input, orchestrates logic
     ↓
 Service (src/services/*.ts) - handles API communication, retry logic
     ↓
-External API (Earthcast Technologies API, etc.)
+External API (Earthcast Technologies, NOAA, Open-Meteo, etc.)
 ```
 
 **Key Principle**: Handlers orchestrate business logic; services abstract API communication. Keep them separate.
@@ -147,9 +147,11 @@ if (array.length > maxEntries) {
 ```
 
 **No Secrets in Code**:
-- All APIs used are free and require no keys (NOAA, Open-Meteo, Nominatim)
+- Most weather APIs are free and require no keys (NOAA, Open-Meteo, Nominatim)
+- Earthcast Technologies API requires HTTP Basic Auth (username/password)
 - Optional NCEI API token configured via environment variable only
-- Never commit `.env` files
+- All credentials MUST be set via environment variables only
+- Never commit `.env` files or credentials
 
 ## Adding New Features
 
@@ -195,9 +197,37 @@ if (array.length > maxEntries) {
    - `CHANGELOG.md` - Version history
    - `CLAUDE.md` - AI assistant guide (architecture notes)
 
+### Earthcast-Specific Patterns
+
+**Two Main Handlers**:
+1. `earthcastDataHandler.ts` - General data queries (`earthcast_query_data` tool)
+   - Flexible spatial/temporal/altitude filtering
+   - Returns raw geospatial data with grid values
+   - Supports multiple products in single request
+
+2. `earthcastGoNoGoHandler.ts` - Launch decision support (`earthcast_gonogo_decision` tool)
+   - Threshold-based evaluation for launch safety
+   - Accepts user-defined thresholds for each weather product
+   - Returns GO/NO-GO decision with justification
+
+**Available Products**:
+- `neutral_density` - Atmospheric density at 100-1000km altitude
+- `ionospheric_density` - VTEC for GPS/radio propagation
+- `lightning_density` - 30-min average lightning activity
+- `low-level-windshear` - Winds at 850mb (~5,000 ft)
+- `high-level-windshear` - Winds at 300mb (~30,000 ft)
+- `turbulence_max` - Maximum turbulence composite
+- `contrails_max` - Maximum contrail potential
+- `reflectivity_5k` - Radar reflectivity at 5km resolution
+
+**Service Implementation** (`src/services/earthcast.ts`):
+- HTTP Basic Auth for authentication
+- Separate caching TTLs: 5 min (decision support), 1 hour (data queries)
+- 4 endpoints: `/weather/dss/launch/gonogo`, `/weather/query/request`, `/weather/query/forecast`, `/weather/product/timestamp`
+
 ### Adding External API Integration
 
-Follow pattern from existing services (`src/services/noaa.ts`, `openmeteo.ts`):
+Follow pattern from existing services (`src/services/noaa.ts`, `openmeteo.ts`, `earthcast.ts`):
 
 ```typescript
 export class MyAPIService {
@@ -235,10 +265,14 @@ export class MyAPIService {
 Control which MCP tools are exposed via `ENABLED_TOOLS` environment variable:
 
 **Presets**:
-- `basic` (default): Essential weather (5 tools) - forecast, current, alerts, location, status
-- `standard`: Basic + historical_weather (6 tools)
-- `full`: Standard + air_quality (7 tools)
-- `all`: All 16 tools including marine, imagery, lightning, rivers, wildfires, saved locations
+- `basic` (default): Essential weather (9 tools) - forecast, current, alerts, location, status, saved locations (4 tools)
+- `standard`: Basic + historical_weather
+- `full`: Standard + air_quality
+- `all`: All 17 tools (15 weather tools + 2 Earthcast tools)
+
+**Earthcast Tools** (not in presets by default):
+- `earthcast_query_data` - Query specialized environmental data products
+- `earthcast_gonogo_decision` - Launch decision support system
 
 **Configuration** (in `.env` or MCP client config):
 ```bash
@@ -267,6 +301,11 @@ ENABLED_TOOLS=all,-marine                            # Remove from preset
 All variables validated with bounds checking in `src/config/cache.ts`:
 
 ```bash
+# Earthcast Technologies API (Required for Earthcast tools)
+ECT_API_URL=http://ect-sandbox.com:8000     # API base URL (default: sandbox)
+ECT_API_USERNAME=your_username              # HTTP Basic Auth username
+ECT_API_PASSWORD=your_password              # HTTP Basic Auth password
+
 # Cache Configuration
 CACHE_ENABLED=true                    # Enable/disable caching (default: true)
 CACHE_MAX_SIZE=1000                   # Max cache entries (100-10000, default: 1000)
@@ -282,6 +321,7 @@ NCEI_TOKEN=your_token_here           # Free token from https://www.ncdc.noaa.gov
 
 # Tool Selection
 ENABLED_TOOLS=basic                   # Which tools to expose (default: basic)
+# Add Earthcast tools: ENABLED_TOOLS=basic,+earthcast_query_data,+earthcast_gonogo_decision
 ```
 
 ## Debugging Tips
@@ -303,9 +343,9 @@ npx vitest watch --grep "validation"
 ## References
 
 - **MCP Specification**: https://spec.modelcontextprotocol.io/
+- **Earthcast Technologies API**: http://ect-sandbox.com:8000/docs (Swagger UI)
 - **NOAA API Documentation**: https://www.weather.gov/documentation/services-web-api
 - **Open-Meteo API Documentation**: https://open-meteo.com/en/docs
+- **ECT_API_DOCUMENTATION.md**: Earthcast Technologies API endpoint reference
 - **CLAUDE.md**: Comprehensive AI assistant development guide with architecture details
-- **README.md**: User-facing documentation
-- **docs/development/CODE_REVIEW.md**: Code quality assessment
-- **docs/development/SECURITY_AUDIT.md**: Security analysis
+- **README.md**: User-facing documentation and installation instructions

@@ -165,7 +165,7 @@ class NominatimProvider implements GeocodingProvider {
       baseURL: 'https://nominatim.openstreetmap.org',
       timeout: 10000,
       headers: {
-        'User-Agent': '(weather-mcp, github.com/weather-mcp/weather-mcp)',
+        'User-Agent': '(earthcast-mcp, github.com/earthcast-mcp/earthcast-mcp)',
         'Accept': 'application/json'
       }
     });

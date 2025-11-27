@@ -45,7 +45,7 @@ export class NOAAService {
 
   constructor(config: NOAAServiceConfig = {}) {
     const {
-      userAgent = '(weather-mcp, contact@example.com)',
+      userAgent = '(earthcast-mcp, contact@example.com)',
       baseURL = 'https://api.weather.gov',
       nwpsBaseURL = 'https://api.water.noaa.gov/nwps/v1',
       usgsBaseURL = 'https://waterservices.usgs.gov',

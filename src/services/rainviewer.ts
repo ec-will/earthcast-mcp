@@ -19,7 +19,7 @@ export class RainViewerService {
       baseURL: this.baseUrl,
       timeout: 10000,
       headers: {
-        'User-Agent': 'weather-mcp-server/1.4.0'
+        'User-Agent': 'earthcast-mcp-server/1.4.0'
       }
     });
   }

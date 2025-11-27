@@ -1,0 +1,45 @@
+# Development documentation
+**/*.old
+*.old
+docs/
+PROJECT_STATUS.md
+NEXT_STEPS.md
+WARP.md
+CLAUDE.md
+
+# Presentation files
+PRESENTATION.md
+PRESENTATION-SLIDES.md
+ANNOUNCEMENT_EMAIL.md
+earthcast-mcp-slides.pdf
+earthcast-mcp-slides.pptx
+earthcast-mcp-slides-pandoc.pptx
+
+# API documentation (internal)
+ECT_API_DOCUMENTATION.md
+
+# Test files
+tests/
+*.test.ts
+*.test.js
+coverage/
+.vitest/
+
+# Development files
+.env
+.env.example
+.env.*
+*.tgz
+tsconfig.json
+vitest.config.ts
+
+# GitHub specific
+.github/
+
+# Source TypeScript (compiled output in dist/ is included)
+src/
+
+# Git
+.git/
+.gitignore
+.gitattributes

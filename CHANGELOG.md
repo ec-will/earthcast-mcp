@@ -45,7 +45,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Tool configuration system integration
 
 ### Changed
-- Project renamed from `weather-mcp` to `earthcast-mcp`
+- Project renamed from `earthcast-mcp` to `earthcast-mcp`
 - Package name updated to `earthcast-mcp`
 - Server name changed to `earthcast-mcp` in MCP protocol
 - Default tool preset remains `basic` (9 tools)
@@ -59,7 +59,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Example queries for launch operations, aviation, and space weather
 
 ### Technical Details
-- Built on weather-mcp v1.7.x foundation
+- Built on earthcast-mcp v1.7.x foundation
 - Maintains all 15 original weather tools
 - 11 total tools when Earthcast tools enabled (9 basic + 2 Earthcast)
 - Node.js >= 18.0.0 required
@@ -82,7 +82,7 @@ ENABLED_TOOLS        # Tool selection (default: basic)
 
 ## [Pre-0.1.0] - Weather MCP Foundation
 
-This project is based on [weather-mcp](https://github.com/weather-mcp/weather-mcp) which provides the foundation with 15 weather tools:
+This project is based on [earthcast-mcp](https://github.com/earthcast-mcp/earthcast-mcp) which provides the foundation with 15 weather tools:
 
 ### Inherited Features
 - Global weather forecasts (NOAA + Open-Meteo)
@@ -106,13 +106,13 @@ This project is based on [weather-mcp](https://github.com/weather-mcp/weather-mc
 
 ### Version 0.1.0 Highlights
 
-This is the initial release of Earthcast MCP, integrating specialized environmental and weather data from Earthcast Technologies with the proven weather-mcp foundation.
+This is the initial release of Earthcast MCP, integrating specialized environmental and weather data from Earthcast Technologies with the proven earthcast-mcp foundation.
 
 **Key Capabilities:**
 - 🚀 Launch decision support for space operations
 - ✈️ Advanced aviation weather (contrails, windshear, turbulence)
 - 🛰️ Space weather monitoring (ionospheric density, neutral atmosphere)
-- 🌍 Complete global weather coverage (inherited from weather-mcp)
+- 🌍 Complete global weather coverage (inherited from earthcast-mcp)
 
 **Use Cases:**
 - Launch operations at Cape Canaveral, Vandenberg, etc.
@@ -136,13 +136,13 @@ This is the initial release of Earthcast MCP, integrating specialized environmen
 - [npm Package](https://www.npmjs.com/package/earthcast-mcp)
 - [MCP Registry](https://registry.modelcontextprotocol.io)
 - [Earthcast Technologies API](http://ect-api.com)
-- [Weather MCP (Base Project)](https://github.com/weather-mcp/weather-mcp)
+- [Weather MCP (Base Project)](https://github.com/earthcast-mcp/earthcast-mcp)
 
 ---
 
 ## Attribution
 
-Based on [weather-mcp](https://github.com/weather-mcp/weather-mcp) by the Weather MCP Server Contributors.
+Based on [earthcast-mcp](https://github.com/earthcast-mcp/earthcast-mcp) by the Weather MCP Server Contributors.
 
 Earthcast Technologies integration by Will.
 

@@ -17,7 +17,7 @@ dist/
 
 # User data (contains personal information)
 locations.json
-.weather-mcp/
+.earthcast-mcp/
 saved-forecasts/
 
 # IDE

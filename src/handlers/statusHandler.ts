@@ -4,16 +4,19 @@
 
 import { NOAAService } from '../services/noaa.js';
 import { OpenMeteoService } from '../services/openmeteo.js';
+import { EarthcastService } from '../services/earthcast.js';
 import { CacheConfig } from '../config/cache.js';
 
 export async function handleCheckServiceStatus(
   noaaService: NOAAService,
   openMeteoService: OpenMeteoService,
+  earthcastService: EarthcastService,
   serverVersion?: string
 ): Promise<{ content: Array<{ type: string; text: string }> }> {
-  // Check status of both services
+  // Check status of all services
   const noaaStatus = await noaaService.checkServiceStatus();
   const openMeteoStatus = await openMeteoService.checkServiceStatus();
+  const earthcastStatus = await earthcastService.checkServiceStatus();
 
   // Format the status report
   let output = `# Weather API Service Status\n\n`;
@@ -23,10 +26,10 @@ export async function handleCheckServiceStatus(
   if (serverVersion) {
     output += `## Server Version\n\n`;
     output += `**Installed Version:** ${serverVersion}\n`;
-    output += `**Latest Release:** https://github.com/weather-mcp/weather-mcp/releases/latest\n`;
-    output += `**Changelog:** https://github.com/weather-mcp/weather-mcp/blob/main/CHANGELOG.md\n`;
+    output += `**Latest Release:** https://github.com/earthcast-mcp/earthcast-mcp/releases/latest\n`;
+    output += `**Changelog:** https://github.com/earthcast-mcp/earthcast-mcp/blob/main/CHANGELOG.md\n`;
     output += `**Upgrade Instructions:** See README.md "Upgrading to Latest Version" section\n\n`;
-    output += `*Tip: Use \`npx -y @dangahagan/weather-mcp@latest\` in your MCP config to always run the newest version.*\n\n`;
+    output += `*Tip: Use \`npx -y @dangahagan/earthcast-mcp@latest\` in your MCP config to always run the newest version.*\n\n`;
   }
 
   // NOAA Status
@@ -57,14 +60,30 @@ export async function handleCheckServiceStatus(
     output += `- Review documentation: https://open-meteo.com/en/docs\n\n`;
   }
 
+  // Earthcast Status
+  output += `## Earthcast Technologies API (Environmental Data)\n\n`;
+  output += `**Status:** ${earthcastStatus.operational ? '✅ Operational' : '❌ Issues Detected'}\n`;
+  output += `**Message:** ${earthcastStatus.message}\n`;
+  output += `**Status Page:** ${earthcastStatus.statusPage}\n`;
+  output += `**API Server:** ${process.env.ECT_API_URL || 'http://ect-sandbox.com'}\n`;
+  output += `**Coverage:** Launch operations, space weather, aviation data\n\n`;
+
+  if (!earthcastStatus.operational) {
+    output += `**Recommended Actions:**\n`;
+    output += `- Verify ECT_API_USERNAME and ECT_API_PASSWORD environment variables are set\n`;
+    output += `- Check network connectivity to Earthcast API server\n`;
+    output += `- Contact Earthcast Technologies support for assistance\n\n`;
+  }
+
   // Cache Statistics
   if (CacheConfig.enabled) {
     output += `## Cache Statistics\n\n`;
 
     const noaaStats = noaaService.getCacheStats();
     const openMeteoStats = openMeteoService.getCacheStats();
-    const totalHits = noaaStats.hits + openMeteoStats.hits;
-    const totalMisses = noaaStats.misses + openMeteoStats.misses;
+    const earthcastStats = earthcastService.getCacheStats();
+    const totalHits = noaaStats.hits + openMeteoStats.hits + earthcastStats.hits;
+    const totalMisses = noaaStats.misses + openMeteoStats.misses + earthcastStats.misses;
     const totalRequests = totalHits + totalMisses;
     const overallHitRate = totalRequests > 0 ? ((totalHits / totalRequests) * 100).toFixed(1) : '0.0';
 
@@ -95,6 +114,17 @@ export async function handleCheckServiceStatus(
     output += `- Misses: ${openMeteoStats.misses}\n`;
     output += `- Evictions: ${openMeteoStats.evictions}\n\n`;
 
+    const earthcastHitRate = (earthcastStats.hits + earthcastStats.misses) > 0
+      ? ((earthcastStats.hits / (earthcastStats.hits + earthcastStats.misses)) * 100).toFixed(1)
+      : '0.0';
+
+    output += `### Earthcast Service Cache\n`;
+    output += `- Entries: ${earthcastStats.size} / ${earthcastStats.maxSize}\n`;
+    output += `- Hit Rate: ${earthcastHitRate}%\n`;
+    output += `- Hits: ${earthcastStats.hits}\n`;
+    output += `- Misses: ${earthcastStats.misses}\n`;
+    output += `- Evictions: ${earthcastStats.evictions}\n\n`;
+
     output += `*Cache reduces API calls and improves performance for repeated queries.*\n\n`;
   } else {
     output += `## Cache Statistics\n\n`;
@@ -103,23 +133,43 @@ export async function handleCheckServiceStatus(
   }
 
   // Overall status summary
-  const bothOperational = noaaStatus.operational && openMeteoStatus.operational;
-  const neitherOperational = !noaaStatus.operational && !openMeteoStatus.operational;
+  const allOperational = noaaStatus.operational && openMeteoStatus.operational && earthcastStatus.operational;
+  const noneOperational = !noaaStatus.operational && !openMeteoStatus.operational && !earthcastStatus.operational;
 
-  if (bothOperational) {
+  if (allOperational) {
     output += `## Overall Status: ✅ All Services Operational\n\n`;
-    output += `Both NOAA and Open-Meteo APIs are functioning normally. Weather data requests should succeed.\n`;
-  } else if (neitherOperational) {
+    output += `All APIs (NOAA, Open-Meteo, Earthcast) are functioning normally. All weather and environmental data requests should succeed.\n`;
+  } else if (noneOperational) {
     output += `## Overall Status: ❌ Multiple Service Issues\n\n`;
-    output += `Both weather APIs are experiencing issues. Please check the status pages above for updates.\n`;
+    output += `All APIs are experiencing issues. Please check the status pages above for updates.\n`;
   } else {
     output += `## Overall Status: ⚠️ Partial Service Availability\n\n`;
+    const operationalServices = [];
+    const unavailableServices = [];
+    
     if (noaaStatus.operational) {
-      output += `NOAA API is operational: Forecasts and current conditions for US locations are available.\n`;
-      output += `Open-Meteo API has issues: Historical weather data may be unavailable.\n`;
+      operationalServices.push('NOAA (US forecasts & alerts)');
     } else {
-      output += `Open-Meteo API is operational: Historical weather data is available globally.\n`;
-      output += `NOAA API has issues: Forecasts and current conditions for US locations may be unavailable.\n`;
+      unavailableServices.push('NOAA (US forecasts & alerts)');
+    }
+    
+    if (openMeteoStatus.operational) {
+      operationalServices.push('Open-Meteo (global & historical)');
+    } else {
+      unavailableServices.push('Open-Meteo (global & historical)');
+    }
+    
+    if (earthcastStatus.operational) {
+      operationalServices.push('Earthcast (environmental & launch data)');
+    } else {
+      unavailableServices.push('Earthcast (environmental & launch data)');
+    }
+    
+    if (operationalServices.length > 0) {
+      output += `**Operational:** ${operationalServices.join(', ')}\n`;
+    }
+    if (unavailableServices.length > 0) {
+      output += `**Unavailable:** ${unavailableServices.join(', ')}\n`;
     }
   }
 

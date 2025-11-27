@@ -1,14 +1,43 @@
-# Earthcast MCP - Presentation
-
+---
+marp: true
+theme: default
+paginate: true
+backgroundColor: #fff
+style: |
+  section {
+    font-size: 24px;
+  }
+  h1 {
+    color: #1e40af;
+    font-size: 48px;
+  }
+  h2 {
+    color: #1e40af;
+  }
+  h3 {
+    color: #3b82f6;
+    font-size: 28px;
+  }
+  code {
+    background-color: #f3f4f6;
+  }
+  pre {
+    background-color: #1f2937;
+    color: #f9fafb;
+  }
 ---
 
-## Slide 1: Overview
+<!-- _class: lead -->
 
 # Earthcast MCP
 **Environmental & Weather Data for AI Systems**
 
 ### What It Is
 Model Context Protocol (MCP) server combining comprehensive global weather data with specialized environmental products from Earthcast Technologies API
+
+---
+
+## Overview
 
 ### Key Stats
 - **17 Total Tools**: 15 weather tools + 2 Earthcast tools
@@ -22,9 +51,7 @@ Model Context Protocol (MCP) server combining comprehensive global weather data 
 
 ---
 
-## Slide 2: Core Capabilities
-
-# What It Does
+## Core Capabilities
 
 ### 🚀 Launch Decision Support
 - **GO/NO-GO Evaluations** with customizable safety thresholds
@@ -38,7 +65,11 @@ Model Context Protocol (MCP) server combining comprehensive global weather data 
 - **Multi-Level Windshear** - Low (5,000 ft) and high-altitude (30,000 ft)
 - **Turbulence Forecasting** - Flight safety and passenger comfort
 
-### 🌍 Complete Weather Coverage
+---
+
+## Complete Weather Coverage
+
+### 🌍 Global Weather Data
 - Global forecasts (1-16 days, NOAA + Open-Meteo)
 - Current conditions, alerts, historical data (1940-present)
 - Air quality, marine conditions, lightning, rivers, wildfires
@@ -46,9 +77,7 @@ Model Context Protocol (MCP) server combining comprehensive global weather data 
 
 ---
 
-## Slide 3: Technical Architecture
-
-# How It Works
+## Technical Architecture
 
 ### Integration Pattern
 ```
@@ -67,7 +96,9 @@ Earthcast MCP Server
     └── USGS ──────────────────────→ River conditions & flood status (US)
 ```
 
-### API Details
+---
+
+## API Details
 
 **Core Weather Data**
 - **NOAA** (National Oceanic & Atmospheric Administration) - Official US weather service, no API key
@@ -82,7 +113,10 @@ Earthcast MCP Server
 - **NIFC** (National Interagency Fire Center) - ArcGIS service with current wildfire perimeters
 - **USGS** - River gauges and water levels for flood monitoring
 
-### Key Features
+---
+
+## Key Features
+
 - **Intelligent Caching** - 50-80% fewer API calls, <10ms cached responses
 - **Retry Logic** - Exponential backoff with jitter for reliability
 - **Multi-Source Fallback** - Automatic selection of best data source
@@ -98,9 +132,7 @@ No installation needed - works immediately with any MCP-compatible AI assistant
 
 ---
 
-## Slide 4: Real-World Applications
-
-# Use Cases & Examples
+## Real-World Applications
 
 ### Launch Operations
 **Query:** *"Is it safe to launch from Cape Canaveral today?"*
@@ -110,7 +142,10 @@ No installation needed - works immediately with any MCP-compatible AI assistant
 - ✅ Windshear: 6.17 m/s (threshold: 15.0) - **GO**
 - **OVERALL: GO FOR LAUNCH** 🚀
 
-### Aviation Planning
+---
+
+## Aviation Planning
+
 **Query:** *"Compare surface winds with upper-level conditions at Houston"*
 
 **Result:**
@@ -119,7 +154,10 @@ No installation needed - works immediately with any MCP-compatible AI assistant
 - Turbulence: Moderate (2.74)
 - Contrail potential: 40.72 (moderate to high)
 
-### Space Weather Monitoring
+---
+
+## Space Weather Monitoring
+
 **Query:** *"Get ionospheric density and neutral atmospheric density at 400km"*
 
 **Result:**
@@ -127,30 +165,37 @@ No installation needed - works immediately with any MCP-compatible AI assistant
 - Neutral density (100km): 3.54×10⁻⁷ kg/m³
 - Impact analysis for satellite operations
 
-### DoD Weather Intelligence
+---
+
+## DoD Weather Intelligence
+
 **Query:** *"Combined weather and environmental analysis for operational planning"*
 
 **Result:** NOAA standard weather + Earthcast specialized products + launch criteria
 
 ---
 
-## Slide 5: Historical & Archive Data
+## Historical & Archive Data
 
 # Comprehensive Historical Weather Archive
 
 ### Data Coverage
 **Global weather data from 1940 to present** - 85+ years of historical weather records
 
-### Dual-Source Strategy
+---
 
-**Recent Data (Last 7 Days) - US Only**
+## Recent Data (Last 7 Days) - US Only
+
 - **Source:** NOAA Real-Time API
 - **Resolution:** Detailed hourly observations from weather stations
 - **Data Points:** Temperature, conditions, wind speed/direction, humidity, pressure, precipitation
 - **Reliability:** High accuracy from official weather station networks
 - **Use Cases:** Recent event analysis, trend verification, short-term pattern analysis
 
-**Archive Data (1940-Present) - Global**
+---
+
+## Archive Data (1940-Present) - Global
+
 - **Source:** Open-Meteo Historical Weather API (ERA5 reanalysis)
 - **Coverage:** Worldwide - any location on Earth
 - **Resolution:** 9-25km grid, hourly or daily summaries
@@ -161,7 +206,9 @@ No installation needed - works immediately with any MCP-compatible AI assistant
 - **Data Quality:** High-resolution reanalysis data validated against observations
 - **Latency:** 5-day delay for most recent data (finalization period)
 
-### Real-World Applications
+---
+
+## Real-World Applications
 
 **Climate Research & Analysis**
 - Long-term temperature trends and climate change studies
@@ -175,13 +222,24 @@ No installation needed - works immediately with any MCP-compatible AI assistant
 - Risk assessment for operations
 - Insurance and liability analysis
 
-**DoD Mission Planning**
+---
+
+## DoD Mission Planning
+
 - Historical weather conditions for training scenarios
 - Environmental baseline assessments for new installations
 - Operational weather pattern analysis
 - Post-mission weather reconstruction
 
-### Query Examples
+### Technical Details
+- **Caching:** Archived data (>1 day old) cached indefinitely (never changes)
+- **Performance:** Fast retrieval for any date in 85+ year archive
+- **No Authentication Required:** Free access via Open-Meteo API
+- **Global Coverage:** Works for any coordinate pair worldwide
+
+---
+
+## Query Examples
 
 ```
 "What was the weather in Paris on January 15, 2024?"
@@ -197,13 +255,9 @@ No installation needed - works immediately with any MCP-compatible AI assistant
 → Returns: 10-year February weather climatology for that location
 ```
 
-### Technical Details
-- **Caching:** Archived data (>1 day old) cached indefinitely (never changes)
-- **Performance:** Fast retrieval for any date in 85+ year archive
-- **No Authentication Required:** Free access via Open-Meteo API
-- **Global Coverage:** Works for any coordinate pair worldwide
-
 ---
+
+<!-- _class: lead -->
 
 ## Summary
 
@@ -213,6 +267,10 @@ No installation needed - works immediately with any MCP-compatible AI assistant
 3. ✅ **Complete weather coverage** from proven foundation
 4. ✅ **Multi-platform support** including DoD-ready Grok integration
 5. ✅ **Production architecture** with caching, retry logic, error handling
+
+---
+
+## Ready for Deployment
 
 ### Ready for deployment across:
 - Defense operations (DoD via Grok)
@@ -224,5 +282,9 @@ No installation needed - works immediately with any MCP-compatible AI assistant
 **Built on proven earthcast-mcp foundation + specialized Earthcast Technologies integration**
 
 ---
+
+<!-- _class: lead -->
+
+# Questions?
 
 *For more information, see README.md in the project repository*

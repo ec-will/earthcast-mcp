@@ -1,6 +1,6 @@
 # Weather Tools Documentation
 
-Comprehensive documentation for all 15 weather tools inherited from the weather-mcp foundation.
+Comprehensive documentation for all 15 weather tools inherited from the earthcast-mcp foundation.
 
 ---
 
@@ -387,7 +387,7 @@ Save a location for easy reuse in weather queries.
 - `activities` (optional): Activities at this location (array)
 - `notes` (optional): Freeform notes
 
-**Storage:** `~/.weather-mcp/locations.json`
+**Storage:** `~/.earthcast-mcp/locations.json`
 
 **Examples:**
 ```
@@ -520,4 +520,4 @@ For quick reference:
 - **Fire Weather**: US only, use `include_fire_weather=true` in current conditions
 - **Timezone-Aware**: All timestamps automatically displayed in local timezone
 
-Based on [weather-mcp](https://github.com/weather-mcp/weather-mcp) v1.7.x
+Based on [earthcast-mcp](https://github.com/earthcast-mcp/earthcast-mcp) v1.7.x

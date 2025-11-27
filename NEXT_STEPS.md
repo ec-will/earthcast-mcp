@@ -1,6 +1,6 @@
 # EarthCast MCP Server - Next Steps
 
-This project has been successfully rebranded from weather-mcp to **earthcast-mcp** for integrating with the Earthcast Technologies API.
+This project has been successfully rebranded from earthcast-mcp to **earthcast-mcp** for integrating with the Earthcast Technologies API.
 
 ## ✅ Completed Setup
 
@@ -115,7 +115,7 @@ npx tsc --noEmit       # Type check without building
 ## 📚 References
 
 - **WARP.md** - Development guide for this codebase
-- **Original weather-mcp** - Study the existing handlers/services for patterns
+- **Original earthcast-mcp** - Study the existing handlers/services for patterns
 - **MCP Spec** - https://spec.modelcontextprotocol.io/
 
 ## 🎯 Quick Win

@@ -22,8 +22,8 @@ export const VERSION = packageJson.version as string;
 
 /**
  * Get User-Agent string for HTTP requests
- * @returns User-Agent string in format "weather-mcp/VERSION"
+ * @returns User-Agent string in format "earthcast-mcp/VERSION"
  */
 export function getUserAgent(): string {
-  return `weather-mcp/${VERSION}`;
+  return `earthcast-mcp/${VERSION}`;
 }

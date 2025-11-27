@@ -24,7 +24,7 @@ const packageJson = JSON.parse(
 /**
  * Default analytics endpoint (production analytics server)
  */
-const DEFAULT_ENDPOINT = 'https://analytics.weather-mcp.com/v1/events';
+const DEFAULT_ENDPOINT = 'https://analytics.earthcast-mcp.com/v1/events';
 
 /**
  * Validate analytics endpoint for security
@@ -96,7 +96,7 @@ function getOrGenerateAnalyticsSalt(): string {
   }
 
   // Store in user's config directory (NOT in project directory)
-  const configDir = path.join(os.homedir(), '.weather-mcp');
+  const configDir = path.join(os.homedir(), '.earthcast-mcp');
   const saltFile = path.join(configDir, 'analytics-salt');
 
   try {

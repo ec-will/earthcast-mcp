@@ -42,7 +42,7 @@ export async function sendBatch(
         headers: {
           'Content-Type': 'application/json',
           'Content-Length': Buffer.byteLength(data),
-          'User-Agent': `weather-mcp/${version}`,
+          'User-Agent': `earthcast-mcp/${version}`,
         },
         timeout: 5000, // 5 second timeout
         // SECURITY: Explicitly require valid certificates (H-2)

@@ -31,9 +31,9 @@ Access specialized environmental data from Earthcast Technologies API:
   - **Turbulence Forecasting** - Flight safety and passenger comfort
   - **Radar Reflectivity** - Precipitation detection at 5km resolution
 
-### 🌍 Global Weather Data (from weather-mcp)
+### 🌍 Global Weather Data (from earthcast-mcp)
 
-All the features from the proven weather-mcp foundation:
+All the features from the proven earthcast-mcp foundation:
 
 - **Global Weather Forecasts** - NOAA (US, detailed) + Open-Meteo (international)
   - Up to 16-day forecasts
@@ -286,7 +286,7 @@ Get neutral atmospheric density at 400km altitude for coordinates 28.5, -80.5
 
 ### Weather Tools (15 tools)
 
-Earthcast MCP includes all 15 weather tools from the proven weather-mcp foundation:
+Earthcast MCP includes all 15 weather tools from the proven earthcast-mcp foundation:
 
 - `get_forecast` - Weather forecasts (1-16 days, global)
 - `get_current_conditions` - Current weather observations (US)
@@ -335,7 +335,7 @@ specialized products for the same location
 
 ## Architecture
 
-Built on the proven weather-mcp foundation with added Earthcast integration:
+Built on the proven earthcast-mcp foundation with added Earthcast integration:
 
 - **Handler-Service Pattern** - Clean separation of concerns
 - **Intelligent Caching** - Reduces API calls by 50-80%
@@ -385,7 +385,7 @@ npx tsc --noEmit
 
 MIT License - see [LICENSE](LICENSE) file for details.
 
-Based on [weather-mcp](https://github.com/weather-mcp/weather-mcp) by the Weather MCP Server Contributors.
+Based on [earthcast-mcp](https://github.com/earthcast-mcp/earthcast-mcp) by the Weather MCP Server Contributors.
 
 ## Support
 

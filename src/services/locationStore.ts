@@ -1,6 +1,6 @@
 /**
  * Service for managing saved/favorite locations
- * Stores locations in ~/.weather-mcp/locations.json
+ * Stores locations in ~/.earthcast-mcp/locations.json
  */
 
 import { readFileSync, writeFileSync, mkdirSync, existsSync } from 'fs';
@@ -20,7 +20,7 @@ export class LocationStore {
       this.storePath = customPath;
       this.storeDir = join(customPath, '..');
     } else {
-      this.storeDir = join(homedir(), '.weather-mcp');
+      this.storeDir = join(homedir(), '.earthcast-mcp');
       this.storePath = join(this.storeDir, 'locations.json');
     }
   }

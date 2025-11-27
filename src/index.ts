@@ -98,7 +98,7 @@ function redactSensitiveFields(args: unknown): unknown {
  * Initialize the NOAA service
  */
 const noaaService = new NOAAService({
-  userAgent: `weather-mcp/${SERVER_VERSION} (https://github.com/weather-mcp/weather-mcp)`
+  userAgent: `earthcast-mcp/${SERVER_VERSION} (https://github.com/earthcast-mcp/earthcast-mcp)`
 });
 
 /**
@@ -117,7 +117,7 @@ const nominatimService = new NominatimService();
 
 /**
  * Initialize the LocationStore for managing saved/favorite locations
- * Stores locations in ~/.weather-mcp/locations.json
+ * Stores locations in ~/.earthcast-mcp/locations.json
  * No configuration required
  */
 const locationStore = new LocationStore();
@@ -843,7 +843,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
 
       case 'check_service_status':
         return await withAnalytics('check_service_status', async () =>
-          handleCheckServiceStatus(noaaService, openMeteoService, SERVER_VERSION)
+          handleCheckServiceStatus(noaaService, openMeteoService, earthcastService, SERVER_VERSION)
         );
 
       case 'search_location':
@@ -1003,9 +1003,9 @@ async function main() {
     // Inform users about version and upgrade options
     logger.info('Version check', {
       installedVersion: SERVER_VERSION,
-      latestRelease: 'https://github.com/weather-mcp/weather-mcp/releases/latest',
-      upgradeInstructions: 'https://github.com/weather-mcp/weather-mcp#upgrading-to-latest-version',
-      autoUpdateTip: 'Use npx -y @dangahagan/weather-mcp@latest in MCP config for automatic updates'
+      latestRelease: 'https://github.com/earthcast-mcp/earthcast-mcp/releases/latest',
+      upgradeInstructions: 'https://github.com/earthcast-mcp/earthcast-mcp#upgrading-to-latest-version',
+      autoUpdateTip: 'Use npx -y @dangahagan/earthcast-mcp@latest in MCP config for automatic updates'
     });
   } catch (error) {
     logger.error('Failed to start server', error as Error);

@@ -128,7 +128,7 @@ export class BlitzortungService {
       this.client = mqtt.connect(this.brokerUrl, {
         reconnectPeriod: this.reconnectPeriod,
         connectTimeout: this.connectTimeout,
-        clientId: `weather-mcp-${Math.random().toString(16).slice(2, 10)}`
+        clientId: `earthcast-mcp-${Math.random().toString(16).slice(2, 10)}`
       });
 
       await new Promise<void>((resolve, reject) => {

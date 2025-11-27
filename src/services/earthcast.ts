@@ -2,7 +2,7 @@
  * Earthcast Technologies API Service
  * 
  * Provides access to environmental and weather data from Earthcast Technologies API.
- * Based on the proven service pattern from weather-mcp.
+ * Based on the proven service pattern from earthcast-mcp.
  */
 
 import axios, { AxiosError } from 'axios';
@@ -354,6 +354,76 @@ export class EarthcastService {
       [],
       false
     );
+  }
+
+  /**
+   * Check if the Earthcast API is operational
+   */
+  async checkServiceStatus(): Promise<{
+    operational: boolean;
+    message: string;
+    statusPage: string;
+    timestamp: string;
+  }> {
+    try {
+      // Simple health check using product timestamp endpoint
+      const url = `${this.baseUrl}/weather/product/timestamp`;
+      const username = process.env.ECT_API_USERNAME;
+      const password = process.env.ECT_API_PASSWORD;
+
+      const response = await axios.get(url, {
+        params: { product: 'lightning_density' },
+        timeout: 10000,
+        headers: {
+          'User-Agent': 'earthcast-mcp/0.1.0',
+        },
+        auth: username && password ? { username, password } : undefined,
+      });
+
+      if (response.status === 200) {
+        return {
+          operational: true,
+          message: 'Earthcast Technologies API is operational',
+          statusPage: 'Contact Earthcast Technologies for service status',
+          timestamp: new Date().toISOString()
+        };
+      }
+
+      return {
+        operational: false,
+        message: `Earthcast API returned unexpected status: ${response.status}`,
+        statusPage: 'Contact Earthcast Technologies for service status',
+        timestamp: new Date().toISOString()
+      };
+    } catch (error) {
+      const axiosError = error as AxiosError;
+      let message = 'Earthcast Technologies API is unavailable';
+
+      if (axiosError.code === 'ECONNREFUSED') {
+        message = 'Cannot connect to Earthcast API (connection refused)';
+      } else if (axiosError.code === 'ETIMEDOUT' || axiosError.code === 'ECONNABORTED') {
+        message = 'Earthcast API request timed out';
+      } else if (axiosError.response?.status === 401) {
+        message = 'Earthcast API authentication failed (check ECT_API_USERNAME and ECT_API_PASSWORD)';
+      } else if (axiosError.response?.status === 403) {
+        message = 'Earthcast API access forbidden';
+      } else if (axiosError.response?.status) {
+        message = `Earthcast API error (HTTP ${axiosError.response.status})`;
+      }
+
+      logger.warn('Earthcast service check failed', {
+        error: axiosError.message,
+        code: axiosError.code,
+        status: axiosError.response?.status
+      });
+
+      return {
+        operational: false,
+        message,
+        statusPage: 'Contact Earthcast Technologies for service status',
+        timestamp: new Date().toISOString()
+      };
+    }
   }
 
   /**

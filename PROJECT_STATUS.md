@@ -1,7 +1,7 @@
 # Earthcast MCP - Project Status & Continuation Guide
 
 **Last Updated:** 2025-11-27  
-**Project Location:** `/Users/will/projects/weather-mcp`  
+**Project Location:** `/Users/will/projects/earthcast-mcp`  
 **Current Version:** 0.1.0  
 **Status:** Integration Complete - Ready for Publishing
 
@@ -9,7 +9,7 @@
 
 ## Executive Summary
 
-Successfully converted `weather-mcp` to `earthcast-mcp` by integrating Earthcast Technologies API for specialized environmental and launch decision support data. The project maintains all 15 original weather tools while adding 2 new Earthcast tools. All code is working, tested, and documented.
+Successfully converted `earthcast-mcp` to `earthcast-mcp` by integrating Earthcast Technologies API for specialized environmental and launch decision support data. The project maintains all 15 original weather tools while adding 2 new Earthcast tools. All code is working, tested, and documented.
 
 **Total Commits:** 14 commits documenting the complete integration  
 **Tools:** 11 total (9 basic weather + 2 Earthcast)  
@@ -121,7 +121,7 @@ Successfully converted `weather-mcp` to `earthcast-mcp` by integrating Earthcast
    - All features documented
    - DoD use cases
    - Technical details
-   - Attribution to weather-mcp
+   - Attribution to earthcast-mcp
 
 3. **WEATHER_TOOLS.md** (523 lines)
    - Detailed documentation for all 15 weather tools
@@ -144,7 +144,7 @@ Successfully converted `weather-mcp` to `earthcast-mcp` by integrating Earthcast
 
 ### Preserved Originals
 
-- `README.md.old` - Original weather-mcp README
+- `README.md.old` - Original earthcast-mcp README
 - `CHANGELOG.md.old` - Original changelog
 - Both preserved for reference
 
@@ -183,7 +183,7 @@ Working configuration tested in Warp:
   "mcpServers": {
     "earthcast": {
       "command": "node",
-      "args": ["/Users/will/projects/weather-mcp/dist/index.js"],
+      "args": ["/Users/will/projects/earthcast-mcp/dist/index.js"],
       "env": {
         "ECT_API_USERNAME": "test_usr",
         "ECT_API_PASSWORD": "TeSt_UsER08967590513",
@@ -322,7 +322,7 @@ git log --oneline
 ### Build & Test
 
 ```bash
-cd /Users/will/projects/weather-mcp
+cd /Users/will/projects/earthcast-mcp
 
 # Build
 npm run build
@@ -358,7 +358,7 @@ curl -s "http://ect-sandbox.com:8000/weather/query/request?products=neutral_dens
 ## File Structure
 
 ```
-/Users/will/projects/weather-mcp/
+/Users/will/projects/earthcast-mcp/
 ├── src/
 │   ├── services/
 │   │   └── earthcast.ts           # Earthcast API service
@@ -376,7 +376,7 @@ curl -s "http://ect-sandbox.com:8000/weather/query/request?products=neutral_dens
 ├── docs/
 │   └── [various documentation files]
 ├── README.md                      # Main documentation (400 lines)
-├── README.md.old                  # Original weather-mcp README
+├── README.md.old                  # Original earthcast-mcp README
 ├── CHANGELOG.md                   # Release notes
 ├── CHANGELOG.md.old               # Original changelog
 ├── WEATHER_TOOLS.md               # Detailed tool docs (523 lines)
@@ -395,9 +395,9 @@ curl -s "http://ect-sandbox.com:8000/weather/query/request?products=neutral_dens
 
 ## Important Context
 
-### Why "weather-mcp" Directory Name?
+### Why "earthcast-mcp" Directory Name?
 
-The directory is still named `weather-mcp` because it was cloned from the original weather-mcp repository. The **package name** in package.json is `earthcast-mcp`. The directory name doesn't affect the published package.
+The directory is still named `earthcast-mcp` because it was cloned from the original earthcast-mcp repository. The **package name** in package.json is `earthcast-mcp`. The directory name doesn't affect the published package.
 
 ### Tool Enabling Pattern
 
@@ -440,7 +440,7 @@ When resuming work:
 ## Contact & Resources
 
 ### Project Info
-- **Original Base:** [weather-mcp](https://github.com/weather-mcp/weather-mcp)
+- **Original Base:** [earthcast-mcp](https://github.com/earthcast-mcp/earthcast-mcp)
 - **License:** MIT
 - **Node Version:** >= 18.0.0
 - **TypeScript:** 5.9.3
@@ -487,7 +487,7 @@ When resuming work:
 The Earthcast MCP integration is **complete and working**. All code is tested, documented, and ready for publication. The only remaining tasks are publishing logistics: package naming, GitHub setup, npm publishing, and registry submission.
 
 **The project successfully combines:**
-- 15 proven weather tools (weather-mcp foundation)
+- 15 proven weather tools (earthcast-mcp foundation)
 - 2 new Earthcast tools (launch support, environmental data)
 - 9 specialized weather products (space weather, aviation, launch ops)
 - 6+ platform support (Warp, Claude, Cline, Cursor, Grok)
