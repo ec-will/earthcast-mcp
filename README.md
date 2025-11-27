@@ -284,24 +284,28 @@ Get neutral atmospheric density at 400km altitude for coordinates 28.5, -80.5
 
 **Products:** `neutral_density`, `ionospheric_density`, `contrails_max`, `contrails`, `lightning_density`, `low-level-windshear`, `high-level-windshear`, `turbulence_max`, `reflectivity_5k`
 
-### Weather Tools
+### Weather Tools (15 tools)
 
-- `get_forecast` - Weather forecasts (1-16 days)
-- `get_current_conditions` - Current weather observations
+Earthcast MCP includes all 15 weather tools from the proven weather-mcp foundation:
+
+- `get_forecast` - Weather forecasts (1-16 days, global)
+- `get_current_conditions` - Current weather observations (US)
 - `get_alerts` - Weather watches and warnings (US)
-- `get_historical_weather` - Past weather data
-- `search_location` - Find coordinates for locations
-- `get_air_quality` - AQI and pollutant data
-- `get_marine_conditions` - Wave heights and ocean conditions
-- `get_lightning_activity` - Real-time lightning strikes
-- `get_river_conditions` - Water levels and flood status
-- `get_wildfire_info` - Active fire tracking
-- `get_weather_imagery` - Radar and satellite images
+- `get_historical_weather` - Past weather data (1940-present, global)
+- `search_location` - Find coordinates for locations (global)
+- `get_air_quality` - AQI and pollutant data (global)
+- `get_marine_conditions` - Wave heights and ocean conditions (global)
+- `get_lightning_activity` - Real-time lightning strikes (global)
+- `get_river_conditions` - Water levels and flood status (US)
+- `get_wildfire_info` - Active fire tracking (US)
+- `get_weather_imagery` - Radar and satellite images (global)
 - `save_location` - Save favorite locations
 - `list_saved_locations` - List saved locations
 - `get_saved_location` - Get specific saved location
 - `remove_saved_location` - Remove saved location
 - `check_service_status` - Check API health
+
+📖 **[See WEATHER_TOOLS.md for detailed documentation](WEATHER_TOOLS.md)** - Complete parameters, examples, and return values for all 15 weather tools.
 
 ## Example Queries
 
