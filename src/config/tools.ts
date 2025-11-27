@@ -30,7 +30,9 @@ export type ToolName =
   | 'save_location'
   | 'list_saved_locations'
   | 'get_saved_location'
-  | 'remove_saved_location';
+  | 'remove_saved_location'
+  | 'earthcast_query_data'
+  | 'earthcast_gonogo_decision';
 
 /**
  * Tool presets for easy configuration
