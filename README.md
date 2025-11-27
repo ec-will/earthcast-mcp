@@ -3,9 +3,11 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Node Version](https://img.shields.io/badge/node-%3E%3D18.0.0-brightgreen)](https://nodejs.org)
 
-An MCP (Model Context Protocol) server that provides **environmental and weather data** to AI systems like Claude, Cursor, and Warp. Combines comprehensive global weather data (NOAA, Open-Meteo) with specialized environmental products from Earthcast Technologies API.
+An MCP (Model Context Protocol) server that provides **environmental and weather data** to AI systems like Claude, Cursor, Warp, and Grok. Combines comprehensive global weather data (NOAA, Open-Meteo) with specialized environmental products from Earthcast Technologies API.
 
 **Perfect for:** Launch operations, aviation planning, space weather monitoring, and advanced environmental analysis.
+
+**Supported Platforms:** Warp, Claude Desktop, Claude Code, Cline (VS Code), Cursor, Grok (xAI), and any MCP-compatible AI assistant.
 
 ## Features
 
@@ -148,6 +150,26 @@ Configure in Cline's MCP settings:
 #### Cursor
 
 Add via Cursor settings or manual config file.
+
+#### Grok (xAI)
+
+For xAI's Grok integration, add to your MCP configuration:
+
+```json
+{
+  "mcpServers": {
+    "earthcast": {
+      "command": "npx",
+      "args": ["-y", "earthcast-mcp"],
+      "env": {
+        "ECT_API_USERNAME": "your_username",
+        "ECT_API_PASSWORD": "your_password",
+        "ENABLED_TOOLS": "basic,+earthcast_query_data,+earthcast_gonogo_decision"
+      }
+    }
+  }
+}
+```
 
 ### Local Development Installation
 
@@ -364,8 +386,8 @@ Based on [weather-mcp](https://github.com/weather-mcp/weather-mcp) by the Weathe
 ## Support
 
 - **Issues**: [GitHub Issues](https://github.com/your-org/earthcast-mcp/issues)
-- **Documentation**: See [CLAUDE.md](CLAUDE.md) for architecture details
 - **Earthcast API**: Contact Earthcast Technologies for API access
+- **Architecture**: See [WARP.md](WARP.md) for development guide and architecture details
 
 ## Version
 
