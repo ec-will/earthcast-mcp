@@ -80,6 +80,10 @@ export interface GoNoGoArgs extends BaseQueryParams, TimeFilter {
   products: string;
   /** Optional site description */
   site_description?: string;
+  /** Threshold overrides in format "product:value,product:value" */
+  threshold_override?: string;
+  /** If false, use observed data; if true, use forecast data */
+  get_forecast?: boolean;
 }
 
 /**
@@ -160,23 +164,74 @@ export interface ProductEvaluation {
 }
 
 /**
- * Go/No-Go decision response
+ * Product time-specific evaluation
+ */
+export interface TimeSpecificEvaluation {
+  /** Whether conditions are GO */
+  go: boolean;
+  /** Threshold value used */
+  threshold: number;
+}
+
+/**
+ * Product condition details per timestamp
+ */
+export interface ProductConditionDetails {
+  /** Resolution in km (east-west, north-south) */
+  resolution_km?: {
+    east_west: number;
+    north_south: number;
+  };
+  /** Grid width */
+  width?: number;
+  /** Grid height */
+  height?: number;
+  /** Bounding box [west, south, east, north] */
+  bbox?: number[];
+  /** Exception if data retrieval failed */
+  exception?: string | null;
+  /** Time-keyed evaluations and data */
+  [timestamp: string]: TimeSpecificEvaluation | unknown;
+}
+
+/**
+ * Go/No-Go decision response (actual API format)
  */
 export interface GoNoGoResponse {
-  /** Site description */
-  site?: string;
-  /** Evaluation timestamp */
-  timestamp: string;
-  /** Overall decision */
-  decision: 'GO' | 'NO-GO';
-  /** Individual product evaluations */
-  products: ProductEvaluation[];
-  /** Overall status */
-  overall_status: 'GO' | 'NO-GO';
-  /** Confidence level */
-  confidence?: 'HIGH' | 'MEDIUM' | 'LOW';
-  /** Optional additional information */
-  [key: string]: unknown;
+  /** Request parameters */
+  requested?: {
+    products: string[];
+    alts?: number[] | null;
+    alt_min?: number | null;
+    alt_max?: number | null;
+    time_mode?: string;
+    date?: string | null;
+    date_start?: string | null;
+    date_end?: string | null;
+    bbox?: number[] | null;
+    lat_lon?: [number, number] | null;
+    radius_km?: number | null;
+    width?: number;
+    height?: number | null;
+    forecasted?: boolean | null;
+  };
+  /** Condition data per product */
+  conditions?: {
+    [product: string]: ProductConditionDetails;
+  };
+  /** Go/No-Go evaluation result */
+  go_nogo_result: {
+    /** Detailed evaluations per product and time */
+    details: {
+      [product: string]: {
+        [timestamp: string]: TimeSpecificEvaluation;
+      };
+    };
+    /** Overall GO/NO-GO decision */
+    go: boolean;
+    /** Site description */
+    site_description?: string;
+  };
 }
 
 /**
@@ -227,6 +282,10 @@ export interface EarthcastDataToolArgs {
 export interface GoNoGoToolArgs extends EarthcastDataToolArgs {
   /** Launch site description */
   site_description?: string;
+  /** Product thresholds as an object { product: threshold_value } */
+  thresholds?: Record<string, number>;
+  /** Whether to use forecast data (default: false, uses observed data) */
+  use_forecast?: boolean;
 }
 
 /**

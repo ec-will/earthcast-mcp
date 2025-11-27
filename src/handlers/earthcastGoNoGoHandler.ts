@@ -18,39 +18,69 @@ import { logger } from '../utils/logger.js';
 function formatGoNoGoResponse(data: GoNoGoResponse): string {
   let output = '# 🚀 Launch Go/No-Go Decision Support\n\n';
 
+  const overallDecision = data.go_nogo_result.go ? 'GO' : 'NO-GO';
+  const decisionEmoji = data.go_nogo_result.go ? '✅' : '❌';
+
   // Add site information
-  if (data.site) {
-    output += `**Launch Site:** ${data.site}\n`;
-  }
-  output += `**Evaluation Time:** ${data.timestamp}\n`;
-  output += `**Overall Decision:** **${data.decision}** ${data.decision === 'GO' ? '✅' : '❌'}\n`;
-  
-  if (data.confidence) {
-    const confidenceEmoji = data.confidence === 'HIGH' ? '🟢' : data.confidence === 'MEDIUM' ? '🟡' : '🔴';
-    output += `**Confidence Level:** ${confidenceEmoji} ${data.confidence}\n`;
+  if (data.go_nogo_result.site_description) {
+    output += `**Launch Site:** ${data.go_nogo_result.site_description}\n`;
   }
   
+  // Add location info
+  if (data.requested?.lat_lon) {
+    output += `**Location:** ${data.requested.lat_lon[0].toFixed(4)}°N, ${Math.abs(data.requested.lat_lon[1]).toFixed(4)}°${data.requested.lat_lon[1] >= 0 ? 'E' : 'W'}\n`;
+  }
+  
+  if (data.requested?.radius_km) {
+    output += `**Evaluation Radius:** ${data.requested.radius_km} km\n`;
+  }
+  
+  output += `**Overall Decision:** **${overallDecision}** ${decisionEmoji}\n`;
   output += '\n---\n\n';
 
   // Add individual product evaluations
   output += '## Product Evaluations\n\n';
   
-  for (const product of data.products) {
-    const statusEmoji = product.status === 'GO' ? '✅' : '❌';
-    output += `### ${statusEmoji} ${product.product.replace(/-/g, ' ').toUpperCase()}\n\n`;
-    output += `**Status:** ${product.status}\n`;
-    output += `**Message:** ${product.message}\n`;
+  const details = data.go_nogo_result.details;
+  let goCount = 0;
+  let noGoCount = 0;
+  
+  for (const [productName, timestamps] of Object.entries(details)) {
+    // Get the latest timestamp for this product
+    const timestampKeys = Object.keys(timestamps).sort().reverse();
+    const latestTimestamp = timestampKeys[0];
+    const evaluation = timestamps[latestTimestamp];
     
-    if (product.threshold !== undefined) {
-      output += `**Threshold:** ${product.threshold}\n`;
-    }
+    const isGo = evaluation.go;
+    const statusEmoji = isGo ? '✅' : '❌';
+    if (isGo) goCount++;
+    else noGoCount++;
     
-    if (product.max_value !== undefined) {
-      output += `**Max Value:** ${product.max_value}\n`;
-    }
+    output += `### ${statusEmoji} ${productName.replace(/-/g, ' ').toUpperCase()}\n\n`;
+    output += `**Status:** ${isGo ? 'GO' : 'NO-GO'}\n`;
+    output += `**Threshold:** ${evaluation.threshold}\n`;
+    output += `**Data Time:** ${latestTimestamp}\n`;
     
-    if (product.min_value !== undefined) {
-      output += `**Min Value:** ${product.min_value}\n`;
+    // Add condition data if available
+    if (data.conditions && data.conditions[productName]) {
+      const condition = data.conditions[productName];
+      const conditionData = condition[latestTimestamp] as { average_value?: number; grid?: number[][] };
+      
+      if (conditionData && typeof conditionData === 'object' && 'average_value' in conditionData) {
+        output += `**Average Value:** ${conditionData.average_value?.toFixed(2)}\n`;
+        
+        if (conditionData.grid) {
+          const flatGrid = conditionData.grid.flat();
+          const maxVal = Math.max(...flatGrid);
+          const minVal = Math.min(...flatGrid);
+          output += `**Max Value:** ${maxVal.toFixed(2)}\n`;
+          output += `**Min Value:** ${minVal.toFixed(2)}\n`;
+        }
+      }
+      
+      if (condition.resolution_km) {
+        output += `**Resolution:** ${condition.resolution_km.east_west.toFixed(1)} km\n`;
+      }
     }
     
     output += '\n';
@@ -60,14 +90,12 @@ function formatGoNoGoResponse(data: GoNoGoResponse): string {
   output += '---\n\n';
   output += '## Summary\n\n';
   
-  const goCount = data.products.filter(p => p.status === 'GO').length;
-  const noGoCount = data.products.filter(p => p.status === 'NO-GO').length;
-  
-  output += `**Products Evaluated:** ${data.products.length}\n`;
+  const totalProducts = goCount + noGoCount;
+  output += `**Products Evaluated:** ${totalProducts}\n`;
   output += `**GO Status:** ${goCount} product(s)\n`;
   output += `**NO-GO Status:** ${noGoCount} product(s)\n\n`;
   
-  if (data.decision === 'NO-GO') {
+  if (!data.go_nogo_result.go) {
     output += '⚠️ **Recommendation:** Launch criteria not met. Review NO-GO products before proceeding.\n';
   } else {
     output += '✅ **Recommendation:** All evaluated weather criteria are within acceptable limits for launch.\n';
@@ -87,6 +115,19 @@ function buildGoNoGoParams(args: GoNoGoToolArgs): GoNoGoArgs {
   // Site description
   if (args.site_description) {
     params.site_description = args.site_description;
+  }
+
+  // Build threshold_override string from thresholds object
+  if (args.thresholds && Object.keys(args.thresholds).length > 0) {
+    const thresholdPairs = Object.entries(args.thresholds)
+      .map(([product, value]) => `${product}:${value}`)
+      .join(',');
+    params.threshold_override = thresholdPairs;
+  }
+
+  // Forecast vs observed data
+  if (args.use_forecast !== undefined) {
+    params.get_forecast = args.use_forecast;
   }
 
   // Spatial filtering

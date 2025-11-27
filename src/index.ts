@@ -721,17 +721,24 @@ const TOOL_DEFINITIONS = {
 
   earthcast_gonogo_decision: {
     name: 'earthcast_gonogo_decision' as const,
-    description: 'Get Go/No-Go launch decision support from Earthcast Technologies. Evaluates multiple weather products against predefined thresholds to determine if conditions are acceptable for launch operations. Returns overall decision (GO or NO-GO) with individual product evaluations, threshold values, and confidence levels. Critical for launch planning and operational decision support.',
+    description: 'Get Go/No-Go launch decision support from Earthcast Technologies. Evaluates multiple weather products against thresholds to determine if conditions are acceptable for launch operations. Returns overall decision (GO or NO-GO) with individual product evaluations, threshold values, and actual measurements. Critical for launch planning and operational decision support.',
     inputSchema: {
       type: 'object' as const,
       properties: {
         products: {
           type: 'string' as const,
-          description: 'One or more product keys to evaluate (comma-separated). Example: "reflectivity_5k,low-level-windshear"',
+          description: 'One or more product keys to evaluate (comma-separated). Example: "reflectivity_5k,low-level-windshear,lightning_density"',
         },
         site_description: {
           type: 'string' as const,
           description: 'Launch site description (e.g., "Cape Canaveral LC-39A")'
+        },
+        thresholds: {
+          type: 'object' as const,
+          description: 'Threshold values for each product. Format: { "product_name": threshold_value }. Example: { "lightning_density": 0.5, "low-level-windshear": 15.0 }. Required - at least one product must have a threshold.',
+          additionalProperties: {
+            type: 'number' as const
+          }
         },
         latitude: {
           type: 'number' as const,
@@ -751,7 +758,7 @@ const TOOL_DEFINITIONS = {
         },
         radius: {
           type: 'number' as const,
-          description: 'Radius in kilometers around launch site (requires lat/lon)'
+          description: 'Radius in kilometers around launch site (requires lat/lon). Default: 50km'
         },
         altitude: {
           type: 'number' as const,
@@ -767,18 +774,22 @@ const TOOL_DEFINITIONS = {
         },
         date: {
           type: 'string' as const,
-          description: 'ISO 8601 timestamp for evaluation time'
+          description: 'ISO 8601 timestamp for evaluation time. Omit for latest data.'
+        },
+        use_forecast: {
+          type: 'boolean' as const,
+          description: 'Use forecast data instead of observed data (default: false)'
         },
         width: {
           type: 'number' as const,
-          description: 'Output width in pixels'
+          description: 'Output width in pixels (default: 5)'
         },
         height: {
           type: 'number' as const,
           description: 'Output height in pixels'
         }
       },
-      required: ['products']
+      required: ['products', 'thresholds']
     }
   }
 };
