@@ -259,7 +259,9 @@ function isToolName(name: string): name is ToolName {
     'save_location',
     'list_saved_locations',
     'get_saved_location',
-    'remove_saved_location'
+    'remove_saved_location',
+    'earthcast_query_data',
+    'earthcast_gonogo_decision'
   ];
   return validTools.includes(name as ToolName);
 }
