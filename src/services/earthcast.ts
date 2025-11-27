@@ -19,6 +19,8 @@ import type {
   ForecastQueryArgs,
   WeatherQueryArgs,
   ProductTimestampArgs,
+  VectorQueryArgs,
+  OpticalDepthArgs,
   GoNoGoResponse,
   GeodataResponse,
   ProductTimestampResponse,
@@ -169,6 +171,84 @@ export class EarthcastService {
       return data;
     } catch (error) {
       logger.error('Failed to query weather data');
+      throw this.handleApiError(error);
+    }
+  }
+
+  /**
+   * Query weather data along an ordered vector path
+   * Useful for orbital trajectories and satellite paths
+   * 
+   * @param params - Vector query parameters
+   * @returns Geospatial weather data along the vector path
+   */
+  async queryByVector(params: VectorQueryArgs): Promise<GeodataResponse> {
+    const cacheKey = Cache.generateKey('vector_query', JSON.stringify(params));
+
+    if (CacheConfig.enabled) {
+      const cached = this.cache.get(cacheKey);
+      if (cached) {
+        logger.debug('Cache hit for vector query');
+        return cached as GeodataResponse;
+      }
+    }
+
+    try {
+      const data = await this.retryWithBackoff(async () => {
+        const response = await this.request<GeodataResponse>(
+          '/weather/query/by_vector',
+          params as unknown as Record<string, unknown>
+        );
+        return response;
+      });
+
+      if (CacheConfig.enabled) {
+        // Cache for 1 hour (current/recent data)
+        this.cache.set(cacheKey, data, ECT_DATA_TTL);
+      }
+
+      return data;
+    } catch (error) {
+      logger.error('Failed to query weather data by vector');
+      throw this.handleApiError(error);
+    }
+  }
+
+  /**
+   * Assess optical depth along a line-of-sight
+   * Useful for ground-based telescope observations
+   * 
+   * @param params - Optical depth assessment parameters
+   * @returns Optical depth assessment with visibility probabilities
+   */
+  async assessOpticalDepth(params: OpticalDepthArgs): Promise<GeodataResponse> {
+    const cacheKey = Cache.generateKey('optical_depth', JSON.stringify(params));
+
+    if (CacheConfig.enabled) {
+      const cached = this.cache.get(cacheKey);
+      if (cached) {
+        logger.debug('Cache hit for optical depth assessment');
+        return cached as GeodataResponse;
+      }
+    }
+
+    try {
+      const data = await this.retryWithBackoff(async () => {
+        const response = await this.request<GeodataResponse>(
+          '/weather/query/optical_depth_assessment',
+          params as unknown as Record<string, unknown>
+        );
+        return response;
+      });
+
+      if (CacheConfig.enabled) {
+        // Cache for 1 hour (optical observations are time-sensitive)
+        this.cache.set(cacheKey, data, ECT_DATA_TTL);
+      }
+
+      return data;
+    } catch (error) {
+      logger.error('Failed to assess optical depth');
       throw this.handleApiError(error);
     }
   }

@@ -46,6 +46,8 @@ import {
 } from './handlers/savedLocationsHandler.js';
 import { handleEarthcastDataQuery } from './handlers/earthcastDataHandler.js';
 import { handleGoNoGoDecision } from './handlers/earthcastGoNoGoHandler.js';
+import { handleEarthcastVectorQuery } from './handlers/earthcastVectorHandler.js';
+import { handleOpticalDepthAssessment } from './handlers/earthcastOpticalDepthHandler.js';
 import { withAnalytics, analytics } from './analytics/index.js';
 
 /**
@@ -791,6 +793,137 @@ const TOOL_DEFINITIONS = {
       },
       required: ['products', 'thresholds']
     }
+  },
+
+  earthcast_vector_query: {
+    name: 'earthcast_vector_query' as const,
+    description: 'Query weather data along an ordered vector path from Earthcast Technologies. Ideal for orbital trajectories, satellite paths, and atmospheric sampling along a specific route. Each vector defines a point with coordinates, radius, and optional altitude. Useful for spacecraft drag calculations, orbital mechanics, and trajectory planning through the atmosphere.',
+    inputSchema: {
+      type: 'object' as const,
+      properties: {
+        products: {
+          type: 'string' as const,
+          description: 'One or more product keys (comma-separated). Available: lightning_density, contrails_max, contrails, ionospheric_density, neutral_density, low-level-windshear, high-level-windshear, turbulence_max, reflectivity_5k'
+        },
+        vectors: {
+          type: 'array' as const,
+          description: 'Array of vectors defining the path. Each vector has: lat (degrees), lon (degrees), radius (km), and optional alt (altitude index for 3D products)',
+          items: {
+            type: 'object' as const,
+            properties: {
+              lat: {
+                type: 'number' as const,
+                description: 'Latitude in degrees (-90 to 90)',
+                minimum: -90,
+                maximum: 90
+              },
+              lon: {
+                type: 'number' as const,
+                description: 'Longitude in degrees (-180 to 180)',
+                minimum: -180,
+                maximum: 180
+              },
+              radius: {
+                type: 'number' as const,
+                description: 'Radius in kilometers around the point',
+                minimum: 0
+              },
+              alt: {
+                type: 'number' as const,
+                description: 'Optional altitude index (e.g., 100-1000 for neutral_density)',
+                minimum: 0
+              }
+            },
+            required: ['lat', 'lon', 'radius']
+          }
+        },
+        date: {
+          type: 'string' as const,
+          description: 'ISO 8601 timestamp for query time'
+        },
+        date_start: {
+          type: 'string' as const,
+          description: 'Start of time range (ISO 8601)'
+        },
+        date_end: {
+          type: 'string' as const,
+          description: 'End of time range (ISO 8601)'
+        },
+        width: {
+          type: 'number' as const,
+          description: 'Output width in pixels per vector (default: 10)'
+        },
+        height: {
+          type: 'number' as const,
+          description: 'Output height in pixels per vector (default: 10)'
+        }
+      },
+      required: ['products', 'vectors']
+    }
+  },
+
+  earthcast_optical_depth: {
+    name: 'earthcast_optical_depth' as const,
+    description: 'Assess atmospheric optical depth along a line-of-sight from Earthcast Technologies. Critical for ground-based telescope operations and optical astronomy. Evaluates atmospheric interference along the viewing path from telescope to target, returning visibility probability and optical depth metrics. Minimum 2 vectors required: telescope location and target (with optional intermediate points for better sampling).',
+    inputSchema: {
+      type: 'object' as const,
+      properties: {
+        products: {
+          type: 'string' as const,
+          description: 'One or more product keys (comma-separated). Recommended: neutral_density, ionospheric_density, contrails. Available: all Earthcast products'
+        },
+        vectors: {
+          type: 'array' as const,
+          description: 'Array of at least 2 vectors defining line-of-sight. First vector = telescope location, subsequent = points toward target. Each has: lat, lon, radius (km), optional alt',
+          items: {
+            type: 'object' as const,
+            properties: {
+              lat: {
+                type: 'number' as const,
+                description: 'Latitude in degrees (-90 to 90)',
+                minimum: -90,
+                maximum: 90
+              },
+              lon: {
+                type: 'number' as const,
+                description: 'Longitude in degrees (-180 to 180)',
+                minimum: -180,
+                maximum: 180
+              },
+              radius: {
+                type: 'number' as const,
+                description: 'Radius in kilometers (cylindrical footprint)',
+                minimum: 0
+              },
+              alt: {
+                type: 'number' as const,
+                description: 'Optional altitude index. Omit for ground-based or to sum all altitudes',
+                minimum: 0
+              }
+            },
+            required: ['lat', 'lon', 'radius']
+          },
+          minItems: 2
+        },
+        date: {
+          type: 'string' as const,
+          description: 'ISO 8601 timestamp for assessment time'
+        },
+        description: {
+          type: 'string' as const,
+          description: 'Description of the observation (e.g., "Mount Palomar Observatory targeting NGC 4565")'
+        },
+        width: {
+          type: 'number' as const,
+          description: 'Output width in pixels (default: 10)'
+        },
+        height: {
+          type: 'number' as const,
+          description: 'Output height in pixels (default: 10)'
+        }
+      },
+      required: ['products', 'vectors']
+    }
   }
 };
 
@@ -927,6 +1060,16 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
       case 'earthcast_gonogo_decision':
         return await withAnalytics('earthcast_gonogo_decision', async () =>
           handleGoNoGoDecision(args, earthcastService)
+        );
+
+      case 'earthcast_vector_query':
+        return await withAnalytics('earthcast_vector_query', async () =>
+          handleEarthcastVectorQuery(args, earthcastService)
+        );
+
+      case 'earthcast_optical_depth':
+        return await withAnalytics('earthcast_optical_depth', async () =>
+          handleOpticalDepthAssessment(args, earthcastService)
         );
 
       default:

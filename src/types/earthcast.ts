@@ -297,6 +297,78 @@ export interface ProductTimestampToolArgs {
 }
 
 /**
+ * Vector definition for vector-based queries
+ */
+export interface QueryVector {
+  /** Latitude in degrees */
+  lat: number;
+  /** Longitude in degrees */
+  lon: number;
+  /** Radius in kilometers */
+  radius: number;
+  /** Optional altitude index (for 3D products) */
+  alt?: number;
+}
+
+/**
+ * Arguments for vector-based query endpoint
+ */
+export interface VectorQueryArgs extends TimeFilter, ResolutionOptions {
+  /** One or more product keys (comma-separated) */
+  products: string;
+  /** JSON-encoded array of vectors */
+  vectors: string;
+}
+
+/**
+ * Arguments for optical depth assessment endpoint
+ */
+export interface OpticalDepthArgs extends TimeFilter, ResolutionOptions {
+  /** One or more product keys (comma-separated) */
+  products: string;
+  /** JSON-encoded array of vectors (min 2) defining line-of-sight */
+  vectors: string;
+}
+
+/**
+ * MCP Tool arguments for vector query
+ */
+export interface VectorQueryToolArgs {
+  /** Product keys (comma-separated or array) */
+  products: string | string[];
+  /** Array of vectors defining the query path */
+  vectors: QueryVector[];
+  /** ISO 8601 timestamp */
+  date?: string;
+  /** Start of time range */
+  date_start?: string;
+  /** End of time range */
+  date_end?: string;
+  /** Output width in pixels */
+  width?: number;
+  /** Output height in pixels */
+  height?: number;
+}
+
+/**
+ * MCP Tool arguments for optical depth assessment
+ */
+export interface OpticalDepthToolArgs {
+  /** Product keys (comma-separated or array) */
+  products: string | string[];
+  /** Array of vectors defining line-of-sight (min 2) */
+  vectors: QueryVector[];
+  /** ISO 8601 timestamp */
+  date?: string;
+  /** Output width in pixels */
+  width?: number;
+  /** Output height in pixels */
+  height?: number;
+  /** Description of observation (e.g., telescope location) */
+  description?: string;
+}
+
+/**
  * Error response from API
  */
 export interface EarthcastErrorResponse {

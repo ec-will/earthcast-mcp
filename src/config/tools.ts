@@ -32,7 +32,9 @@ export type ToolName =
   | 'get_saved_location'
   | 'remove_saved_location'
   | 'earthcast_query_data'
-  | 'earthcast_gonogo_decision';
+  | 'earthcast_gonogo_decision'
+  | 'earthcast_vector_query'
+  | 'earthcast_optical_depth';
 
 /**
  * Tool presets for easy configuration
@@ -261,7 +263,9 @@ function isToolName(name: string): name is ToolName {
     'get_saved_location',
     'remove_saved_location',
     'earthcast_query_data',
-    'earthcast_gonogo_decision'
+    'earthcast_gonogo_decision',
+    'earthcast_vector_query',
+    'earthcast_optical_depth'
   ];
   return validTools.includes(name as ToolName);
 }
