@@ -43,15 +43,15 @@
     "ai",
     "llm"
   ],
-  "author": "Will",
+  "author": "Earthcast Technologies",
   "license": "MIT",
-  "homepage": "https://github.com/will/earthcast-mcp#readme",
+  "homepage": "https://github.com/ec-will/earthcast-mcp#readme",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/will/earthcast-mcp.git"
+    "url": "git+https://github.com/ec-will/earthcast-mcp.git"
   },
   "bugs": {
-    "url": "https://github.com/will/earthcast-mcp/issues"
+    "url": "https://github.com/ec-will/earthcast-mcp/issues"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.21.1",

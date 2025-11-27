@@ -159,7 +159,7 @@ Successfully converted `earthcast-mcp` to `earthcast-mcp` by integrating Earthca
   "name": "earthcast-mcp",
   "version": "0.1.0",
   "description": "MCP server for environmental and weather data from Earthcast Technologies",
-  "author": "Will",
+  "author": "Earthcast Technologies",
   "license": "MIT"
 }
 ```
