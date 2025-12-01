@@ -54,7 +54,7 @@
     "url": "https://github.com/ec-will/earthcast-mcp/issues"
   },
   "dependencies": {
-    "@modelcontextprotocol/sdk": "^1.21.1",
+    "@modelcontextprotocol/sdk": "^1.23.0",
     "axios": "^1.13.1",
     "dotenv": "^17.2.3",
     "luxon": "^3.7.2",
