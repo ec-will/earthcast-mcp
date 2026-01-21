@@ -64,9 +64,20 @@ All the features from the proven weather-mcp foundation:
 
 ## Installation
 
-### Quick Start (npx - Recommended)
+### Quick Start
 
-No installation needed! Use with any MCP-compatible AI tool:
+Clone the repository and build:
+
+```bash
+git clone https://github.com/ec-will/earthcast-mcp.git
+cd earthcast-mcp
+npm install
+npm run build
+```
+
+Then configure your MCP client to use the built package.
+
+### MCP Client Configuration
 
 #### Warp
 
@@ -76,8 +87,8 @@ Add to `~/.config/warp/mcp_settings.json` or configure via Warp UI:
 {
   "mcpServers": {
     "earthcast": {
-      "command": "npx",
-      "args": ["-y", "earthcast-mcp"],
+      "command": "node",
+      "args": ["/path/to/earthcast-mcp/dist/index.js"],
       "env": {
         "ECT_API_USERNAME": "your_username",
         "ECT_API_PASSWORD": "your_password",
@@ -98,8 +109,8 @@ Edit config file:
 {
   "mcpServers": {
     "earthcast": {
-      "command": "npx",
-      "args": ["-y", "earthcast-mcp"],
+      "command": "node",
+      "args": ["/path/to/earthcast-mcp/dist/index.js"],
       "env": {
         "ECT_API_USERNAME": "your_username",
         "ECT_API_PASSWORD": "your_password"
@@ -117,8 +128,8 @@ Add to `~/.config/claude-code/mcp_settings.json`:
 {
   "mcpServers": {
     "earthcast": {
-      "command": "npx",
-      "args": ["-y", "earthcast-mcp"],
+      "command": "node",
+      "args": ["/path/to/earthcast-mcp/dist/index.js"],
       "env": {
         "ECT_API_USERNAME": "your_username",
         "ECT_API_PASSWORD": "your_password"
@@ -136,8 +147,8 @@ Configure in Cline's MCP settings:
 {
   "mcpServers": {
     "earthcast": {
-      "command": "npx",
-      "args": ["-y", "earthcast-mcp"],
+      "command": "node",
+      "args": ["/path/to/earthcast-mcp/dist/index.js"],
       "env": {
         "ECT_API_USERNAME": "your_username",
         "ECT_API_PASSWORD": "your_password"
@@ -149,7 +160,7 @@ Configure in Cline's MCP settings:
 
 #### Cursor
 
-Add via Cursor settings or manual config file.
+Add via Cursor settings or manual config file using the same pattern as above.
 
 #### Grok (xAI)
 
@@ -159,8 +170,8 @@ For xAI's Grok integration, add to your MCP configuration:
 {
   "mcpServers": {
     "earthcast": {
-      "command": "npx",
-      "args": ["-y", "earthcast-mcp"],
+      "command": "node",
+      "args": ["/path/to/earthcast-mcp/dist/index.js"],
       "env": {
         "ECT_API_USERNAME": "your_username",
         "ECT_API_PASSWORD": "your_password",
@@ -171,31 +182,7 @@ For xAI's Grok integration, add to your MCP configuration:
 }
 ```
 
-### Local Development Installation
-
-```bash
-git clone https://github.com/ec-will/earthcast-mcp.git
-cd earthcast-mcp
-npm install
-npm run build
-```
-
-Then reference the local build in your MCP config:
-
-```json
-{
-  "mcpServers": {
-    "earthcast": {
-      "command": "node",
-      "args": ["/absolute/path/to/earthcast-mcp/dist/index.js"],
-      "env": {
-        "ECT_API_USERNAME": "your_username",
-        "ECT_API_PASSWORD": "your_password"
-      }
-    }
-  }
-}
-```
+**Note:** Replace `/path/to/earthcast-mcp` with the actual path where you cloned the repository.
 
 ## Configuration
 
