@@ -424,7 +424,7 @@ MIT License - see [LICENSE](LICENSE) file for details.
 
 This project is a fork of [weather-mcp](https://github.com/weather-mcp/weather-mcp) by the Weather MCP Server Contributors.
 
-Earthcast Technologies integration and specialized environmental tools added by Will.
+Earthcast Technologies integration and specialized environmental tools added by Earthcast Technologies' HPC and AI team.
 
 ## Support
 
