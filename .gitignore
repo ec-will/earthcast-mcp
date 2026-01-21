@@ -50,3 +50,9 @@ mcp-publisher
 
 # Temporary test files
 temp/
+
+# Internal development directories (not for public repo)
+auto-api/
+dynamic/
+ect-go-mcp/
+go/
