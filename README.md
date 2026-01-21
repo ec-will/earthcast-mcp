@@ -174,7 +174,7 @@ For xAI's Grok integration, add to your MCP configuration:
 ### Local Development Installation
 
 ```bash
-git clone https://github.com/your-org/earthcast-mcp.git
+git clone https://github.com/ec-will/earthcast-mcp.git
 cd earthcast-mcp
 npm install
 npm run build
@@ -428,7 +428,7 @@ Earthcast Technologies integration and specialized environmental tools added by 
 
 ## Support
 
-- **Issues**: [GitHub Issues](https://github.com/your-org/earthcast-mcp/issues)
+- **Issues**: [GitHub Issues](https://github.com/ec-will/earthcast-mcp/issues)
 - **Earthcast API**: Contact Earthcast Technologies for API access
 - **Architecture**: See [WARP.md](WARP.md) for development guide and architecture details
 
