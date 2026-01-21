@@ -1,10 +1,21 @@
-# Weather Tools Documentation
+# Earthcast MCP Tools Documentation
 
-Comprehensive documentation for all 15 weather tools inherited from the earthcast-mcp foundation.
+Comprehensive documentation for all tools in earthcast-mcp, including 15 weather tools from the weather-mcp foundation and 4 specialized Earthcast Technologies tools.
 
 ---
 
 ## Tool Summary
+
+### Earthcast Technologies Tools
+
+| Tool | Description | Use Case |
+|------|-------------|----------|
+| `earthcast_gonogo_decision` | Launch decision support | Space launch safety |
+| `earthcast_query_data` | Advanced environmental data | Satellite ops, aviation |
+| `earthcast_vector_query` | Weather along trajectories | Orbital mechanics |
+| `earthcast_optical_depth` | Atmospheric optical depth | Telescope operations |
+
+### Weather Tools
 
 | Tool | Description | Coverage |
 |------|-------------|----------|
@@ -26,7 +37,127 @@ Comprehensive documentation for all 15 weather tools inherited from the earthcas
 
 ---
 
-## Detailed Tool Documentation
+## Earthcast Technologies Tools
+
+### earthcast_gonogo_decision
+Launch decision support with threshold-based GO/NO-GO evaluation.
+
+**Parameters:**
+- `latitude` (required): Latitude coordinate (-90 to 90)
+- `longitude` (required): Longitude coordinate (-180 to 180)
+- `products` (required): Comma-separated product keys to evaluate
+- `thresholds` (optional): Custom thresholds per product (e.g., `{"lightning_density": 0.5}`)
+- `radius` (optional): Query radius in km (default: 50)
+- `use_forecast` (optional): Use forecast vs observed data (default: false)
+
+**Available Products:**
+- `lightning_density` - 30-minute average lightning activity
+- `low-level-windshear` - Winds at 850mb (~5,000 ft)
+- `high-level-windshear` - Winds at 300mb (~30,000 ft)
+- `turbulence_max` - Maximum turbulence composite
+- `contrails_max` - Maximum contrail potential
+- `reflectivity_5k` - Radar reflectivity at 5km resolution
+
+**Returns:**
+- Overall GO/NO-GO decision
+- Product-by-product evaluation
+- Values vs thresholds comparison
+- Safety recommendations
+
+**Examples:**
+```
+Is it safe to launch from Cape Canaveral today?
+Evaluate launch conditions: lightning < 0.5, windshear < 15 m/s
+```
+
+---
+
+### earthcast_query_data
+Query advanced environmental data products.
+
+**Parameters:**
+- `latitude` (required): Latitude coordinate (-90 to 90)
+- `longitude` (required): Longitude coordinate (-180 to 180)
+- `products` (required): Comma-separated product keys
+- `altitude` (optional): Altitude in km for altitude-dependent products
+- `radius` (optional): Query radius in km
+- `start_date` (optional): Start time in ISO 8601 format
+- `end_date` (optional): End time in ISO 8601 format
+
+**Available Products:**
+- `neutral_density` - Atmospheric density at 100-1000km altitude (satellite drag)
+- `ionospheric_density` - VTEC for GPS/radio propagation
+- `lightning_density` - 30-minute average lightning activity
+- `low-level-windshear` - Winds at 850mb (~5,000 ft)
+- `high-level-windshear` - Winds at 300mb (~30,000 ft)
+- `turbulence_max` - Maximum turbulence composite
+- `contrails_max` - Maximum contrail formation potential
+- `contrails` - Altitude-specific contrail potential (100+ levels)
+- `reflectivity_5k` - Global radar reflectivity at 5km resolution
+
+**Returns:**
+- Grid values for requested products
+- Statistics (min, max, mean)
+- Timestamps and spatial metadata
+
+**Examples:**
+```
+Get neutral atmospheric density at 400km altitude over Cape Canaveral
+Query ionospheric density for GPS planning
+```
+
+---
+
+### earthcast_vector_query
+Query weather data along an ordered vector path - ideal for orbital trajectories.
+
+**Parameters:**
+- `products` (required): Comma-separated product keys
+- `vectors` (required): Array of points defining the path, each with:
+  - `lat` - Latitude
+  - `lon` - Longitude
+  - `radius` - Search radius in km
+  - `altitude` (optional) - Altitude in km
+- `date` (optional): ISO 8601 timestamp
+
+**Returns:**
+- Weather data at each vector point
+- Product values along the trajectory
+- Spatial and temporal metadata
+
+**Examples:**
+```
+Get neutral density along a satellite trajectory from 28.5, -80.5 through 30.0, -78.0 to 32.0, -76.0
+Query atmospheric conditions along reentry path
+```
+
+---
+
+### earthcast_optical_depth
+Assess atmospheric optical depth along a line-of-sight for ground-based telescope operations.
+
+**Parameters:**
+- `products` (required): Comma-separated product keys (recommended: neutral_density, ionospheric_density, contrails)
+- `vectors` (required): Minimum 2 vectors defining the line-of-sight:
+  - Telescope location
+  - Target point (or intermediate points)
+- `description` (optional): Observation description
+
+**Returns:**
+- Optical depth assessment
+- Visibility probability
+- Atmospheric interference metrics
+- Observation recommendations
+
+**Examples:**
+```
+Evaluate viewing conditions from Mount Palomar Observatory to target at azimuth 180°, elevation 45°
+Assess optical depth for tonight's observation
+```
+
+---
+
+## Weather Tools
 
 ### 1. get_forecast
 Get weather forecast for any location worldwide.
@@ -492,6 +623,13 @@ For quick reference:
 
 ## Data Source Credits
 
+### Earthcast Technologies API (Requires Credentials)
+- Advanced environmental products for space and aviation
+- Neutral atmospheric density (100-1000km altitude)
+- Ionospheric density (VTEC)
+- Launch decision support systems
+- See [ECT_API_DOCUMENTATION.md](ECT_API_DOCUMENTATION.md) for details
+
 ### Free APIs (No Authentication Required)
 - **NOAA** - US weather data (forecasts, current conditions, alerts, marine, rivers)
 - **Open-Meteo** - Global weather, historical data, air quality, marine
@@ -520,4 +658,6 @@ For quick reference:
 - **Fire Weather**: US only, use `include_fire_weather=true` in current conditions
 - **Timezone-Aware**: All timestamps automatically displayed in local timezone
 
-Based on [earthcast-mcp](https://github.com/earthcast-mcp/earthcast-mcp) v1.7.x
+Weather tools based on [weather-mcp](https://github.com/weather-mcp/weather-mcp) v1.7.x
+
+Earthcast tools by Earthcast Technologies' HPC and AI team.
