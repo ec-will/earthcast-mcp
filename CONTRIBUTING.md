@@ -1,25 +1,25 @@
-# Contributing to Weather MCP Server
+# Contributing to Earthcast MCP
 
-Thank you for your interest in contributing to Weather MCP Server! This document provides guidelines and instructions for contributing.
+Thank you for your interest in contributing to Earthcast MCP! This document provides guidelines and instructions for contributing.
 
 ## Code of Conduct
 
-This project aims to foster an open and welcoming environment. Please be respectful and constructive in all interactions.
+Please read our [Code of Conduct](CODE_OF_CONDUCT.md) before contributing.
 
 ## How to Contribute
 
 ### Reporting Bugs
 
-If you find a bug, please open an issue on GitHub with:
+If you find a bug, please [open an issue](https://github.com/ec-will/earthcast-mcp/issues/new?template=bug_report.yml) with:
 - A clear, descriptive title
 - Steps to reproduce the issue
 - Expected vs. actual behavior
-- Your environment (OS, Node.js version, etc.)
+- Your environment (OS, Node.js version, MCP client)
 - Any relevant error messages or logs
 
 ### Suggesting Enhancements
 
-We welcome feature suggestions! Please open an issue with:
+We welcome feature suggestions! Please [open a feature request](https://github.com/ec-will/earthcast-mcp/issues/new?template=feature_request.yml) with:
 - A clear description of the feature
 - The use case it addresses
 - Any implementation ideas (optional)
@@ -34,10 +34,10 @@ We welcome feature suggestions! Please open an issue with:
 
 ## Development Setup
 
-1. Clone your fork:
+1. Clone the repository:
 ```bash
-git clone https://github.com/your-username/weather-mcp.git
-cd weather-mcp
+git clone https://github.com/ec-will/earthcast-mcp.git
+cd earthcast-mcp
 ```
 
 2. Install dependencies:
@@ -52,7 +52,35 @@ npm run build
 
 4. Run tests:
 ```bash
-npx tsx tests/test_noaa_api.ts
+npm test
+```
+
+## Project Structure
+
+```
+earthcast-mcp/
+├── src/
+│   ├── index.ts              # MCP server entry point
+│   ├── handlers/             # Tool request handlers
+│   │   ├── earthcastDataHandler.ts
+│   │   ├── earthcastGoNoGoHandler.ts
+│   │   ├── earthcastVectorHandler.ts
+│   │   ├── earthcastOpticalDepthHandler.ts
+│   │   ├── forecastHandler.ts
+│   │   └── ... (weather handlers)
+│   ├── services/             # External API clients
+│   │   ├── earthcast.ts      # Earthcast Technologies API
+│   │   ├── noaa.ts           # NOAA Weather API
+│   │   ├── openmeteo.ts      # Open-Meteo API
+│   │   └── ...
+│   ├── types/                # TypeScript type definitions
+│   ├── utils/                # Shared utilities
+│   ├── config/               # Configuration
+│   └── errors/               # Custom error classes
+├── tests/
+│   ├── unit/                 # Unit tests
+│   └── integration/          # Integration tests
+└── dist/                     # Compiled output (generated)
 ```
 
 ## Coding Standards
@@ -71,146 +99,54 @@ npx tsx tests/test_noaa_api.ts
 - Add semicolons at the end of statements
 - Follow existing code patterns and conventions
 - Keep functions focused and single-purpose
-- Use descriptive variable and function names
-
-### Comments
-
-- Add comments for complex logic
-- Document public APIs and interfaces
-- Explain "why" not "what" in comments
-- Keep comments up-to-date with code changes
 
 ### Error Handling
 
 - Always handle errors gracefully
+- Use custom error classes from `src/errors/ApiError.ts`
 - Provide clear, user-friendly error messages
-- Log detailed errors for debugging (to stderr)
-- Never expose internal errors to end users
+- Log detailed errors to stderr (never stdout - MCP protocol requirement)
 
-## Project Structure
+### Testing
 
-```
-weather-mcp/
-├── src/
-│   ├── index.ts           # Main MCP server
-│   ├── services/
-│   │   ├── noaa.ts        # NOAA API service
-│   │   └── openmeteo.ts   # Open-Meteo historical weather API service
-│   ├── types/
-│   │   ├── noaa.ts        # NOAA TypeScript type definitions
-│   │   └── openmeteo.ts   # Open-Meteo TypeScript type definitions
-│   └── utils/
-│       └── units.ts       # Unit conversion utilities
-├── tests/                 # Test files
-│   ├── test_noaa_api.ts   # NOAA API test script
-│   ├── test_openmeteo.ts  # Open-Meteo API test script
-│   └── test_historical_mcp.ts  # Historical weather MCP test
-├── docs/                  # Documentation
-│   ├── TESTING_GUIDE.md
-│   ├── NOAA_API_RESEARCH.md
-│   └── PROJECT_STATUS.md
-└── dist/                  # Compiled output (generated)
-```
+- Write tests for new features
+- Ensure all existing tests pass before submitting PR
+- Follow patterns in `tests/unit/` and `tests/integration/`
 
-## Testing
+## Environment Variables
 
-### Before Submitting
+For Earthcast API features, you'll need credentials:
 
-1. Run the build to check for TypeScript errors:
 ```bash
-npm run build
+ECT_API_USERNAME=your_username
+ECT_API_PASSWORD=your_password
 ```
 
-2. Test with the NOAA API:
-```bash
-npx tsx tests/test_noaa_api.ts
-```
-
-3. Test manually with Claude Code (if possible)
-
-### Adding Tests
-
-When adding new features:
-- Add test cases to `tests/test_noaa_api.ts` for new service methods
-- Update `docs/TESTING_GUIDE.md` with new manual test scenarios
-- Ensure all existing tests still pass
-
-## Documentation
-
-### When to Update Documentation
-
-Update documentation when you:
-- Add a new tool or feature
-- Change existing functionality
-- Fix a bug that affects usage
-- Improve performance significantly
-
-### Which Files to Update
-
-- `README.md` - For user-facing changes
-- `docs/TESTING_GUIDE.md` - For new test scenarios
-- `docs/NOAA_API_RESEARCH.md` - For API discoveries
-- `docs/PROJECT_STATUS.md` - For tracking progress
-- Code comments - For implementation details
+Weather APIs (NOAA, Open-Meteo) require no authentication.
 
 ## Commit Messages
 
 Write clear, descriptive commit messages:
 
-### Format
 ```
 Brief description (50 chars or less)
 
 More detailed explanation if needed. Wrap at 72 characters.
 - Bullet points for multiple changes
 - Use present tense ("Add feature" not "Added feature")
-- Reference issues and PRs where relevant
+- Reference issues where relevant (#123)
 ```
-
-### Examples
-
-Good:
-```
-Add support for hourly forecast
-
-Implement new tool for hourly weather forecasts using NOAA's
-hourly forecast endpoint. Includes error handling and tests.
-
-Fixes #123
-```
-
-Bad:
-```
-fixed stuff
-```
-
-## Release Process
-
-(For maintainers)
-
-1. Update version in `package.json`
-2. Update `docs/releases/CHANGELOG.md` with changes
-3. Create a git tag: `git tag v1.0.0`
-4. Push tag: `git push origin v1.0.0`
-5. Create GitHub release with notes
-6. (Optional) Publish to npm: `npm publish`
 
 ## Questions?
 
 If you have questions about contributing:
 - Open an issue with the "question" label
 - Check existing issues and discussions
-- Review the code and documentation
 
 ## License
 
 By contributing, you agree that your contributions will be licensed under the MIT License.
 
-## Recognition
+## Attribution
 
-Contributors will be recognized in:
-- GitHub contributors list
-- Release notes for significant contributions
-- Special thanks in README for major features
-
-Thank you for contributing to Weather MCP Server!
+This project is a fork of [weather-mcp](https://github.com/weather-mcp/weather-mcp). Earthcast Technologies integration added by Earthcast Technologies' HPC and AI team.

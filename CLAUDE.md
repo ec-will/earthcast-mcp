@@ -1,15 +1,16 @@
-# CLAUDE.md - AI Assistant Guide for Weather MCP Server
+# CLAUDE.md - AI Assistant Guide for Earthcast MCP
 
 This document provides context and guidelines for AI assistants (Claude, etc.) working with this codebase.
 
 ## Project Overview
 
-**Weather MCP Server** is a Model Context Protocol (MCP) server providing weather data from NOAA and Open-Meteo APIs. It enables AI assistants to fetch real-time weather forecasts, current conditions, historical data, air quality, marine conditions, and severe weather alerts.
+**Earthcast MCP** is a Model Context Protocol (MCP) server providing environmental and weather data from Earthcast Technologies API, NOAA, and Open-Meteo. It enables AI assistants to access real-time weather forecasts, specialized launch decision support, atmospheric density data, and more.
 
 - **Language:** TypeScript (Node.js)
-- **Version:** 1.6.1 (Production Ready)
+- **Version:** 0.1.0
 - **License:** MIT
-- **MCP SDK:** @modelcontextprotocol/sdk v1.21.0
+- **MCP SDK:** @modelcontextprotocol/sdk v1.21.1
+- **Repository:** https://github.com/ec-will/earthcast-mcp
 
 ## Architecture
 
@@ -19,6 +20,10 @@ This document provides context and guidelines for AI assistants (Claude, etc.) w
 src/
 ├── index.ts                 # MCP server entry point, tool registry
 ├── handlers/                # Tool request handlers (one per MCP tool)
+│   ├── earthcastDataHandler.ts       # Earthcast query data tool
+│   ├── earthcastGoNoGoHandler.ts     # Launch decision support
+│   ├── earthcastVectorHandler.ts     # Vector/trajectory queries
+│   ├── earthcastOpticalDepthHandler.ts # Optical depth assessment
 │   ├── forecastHandler.ts
 │   ├── currentConditionsHandler.ts
 │   ├── alertsHandler.ts
@@ -29,14 +34,15 @@ src/
 │   ├── marineConditionsHandler.ts
 │   ├── riverConditionsHandler.ts
 │   ├── wildfireHandler.ts
-│   └── savedLocationsHandler.ts  # Saved locations management (v1.7.0)
+│   └── savedLocationsHandler.ts
 ├── services/                # External API clients
+│   ├── earthcast.ts        # Earthcast Technologies API client
 │   ├── noaa.ts             # NOAA Weather API client
 │   ├── openmeteo.ts        # Open-Meteo API client
-│   ├── nominatim.ts        # Nominatim/OSM geocoding client (v1.7.0)
-│   ├── locationStore.ts    # Saved locations storage service (v1.7.0)
+│   ├── nominatim.ts        # Nominatim/OSM geocoding client
+│   ├── locationStore.ts    # Saved locations storage service
 │   ├── nifc.ts             # NIFC wildfire API client
-│   └── usgs.ts             # USGS water services client
+│   └── blitzortung.ts      # Lightning detection client
 ├── types/                   # TypeScript type definitions
 │   ├── noaa.ts
 │   ├── openmeteo.ts
@@ -68,24 +74,30 @@ src/
 4. **Caching Strategy:** LRU cache with TTL based on data volatility (see `src/config/cache.ts`)
 5. **Error Hierarchy:** Custom error classes for different failure scenarios
 
-## Key Features (16 MCP Tools)
+## Key Features (19 MCP Tools)
 
-1. **get_forecast** - 7-day forecasts (NOAA/Open-Meteo, auto-select by location) - Now supports saved locations via `location_name`
-2. **get_current_conditions** - Current weather + fire weather indices (NOAA, US only)
-3. **get_alerts** - Weather alerts/warnings (NOAA, US only)
-4. **get_historical_weather** - Historical data 1940-present (Open-Meteo, global)
-5. **check_service_status** - API health check (all services)
-6. **search_location** - Location search/geocoding (Nominatim/OSM, better small town coverage)
-7. **get_air_quality** - Air quality index + pollutants (Open-Meteo, global)
-8. **get_marine_conditions** - Wave height, swell, currents (Open-Meteo, global)
-9. **get_weather_imagery** - Weather radar/precipitation imagery (RainViewer, global)
-10. **get_lightning_activity** - Real-time lightning detection (Blitzortung.org, global)
-11. **get_river_conditions** - River levels and flood monitoring (NOAA/USGS, US only)
-12. **get_wildfire_info** - Active wildfire tracking (NIFC, US only)
-13. **save_location** - Save frequently used locations with aliases (NEW in v1.7.0)
-14. **list_saved_locations** - View all saved locations (NEW in v1.7.0)
-15. **get_saved_location** - Get details for a saved location (NEW in v1.7.0)
-16. **remove_saved_location** - Delete a saved location (NEW in v1.7.0)
+### Earthcast Technologies Tools (4 tools)
+1. **earthcast_gonogo_decision** - Launch decision support with threshold evaluation
+2. **earthcast_query_data** - Advanced environmental data (neutral density, ionospheric, etc.)
+3. **earthcast_vector_query** - Weather along orbital trajectories
+4. **earthcast_optical_depth** - Atmospheric optical depth for telescope operations
+
+### Weather Tools (15 tools)
+5. **get_forecast** - 7-day forecasts (NOAA/Open-Meteo, auto-select by location)
+6. **get_current_conditions** - Current weather + fire weather indices (NOAA, US only)
+7. **get_alerts** - Weather alerts/warnings (NOAA, US only)
+8. **get_historical_weather** - Historical data 1940-present (Open-Meteo, global)
+9. **check_service_status** - API health check (all services)
+10. **search_location** - Location search/geocoding (Nominatim/OSM)
+11. **get_air_quality** - Air quality index + pollutants (Open-Meteo, global)
+12. **get_marine_conditions** - Wave height, swell, currents (Open-Meteo, global)
+13. **get_weather_imagery** - Weather radar/precipitation imagery (RainViewer, global)
+14. **get_lightning_activity** - Real-time lightning detection (Blitzortung.org, global)
+15. **get_river_conditions** - River levels and flood monitoring (NOAA/USGS, US only)
+16. **get_wildfire_info** - Active wildfire tracking (NIFC, US only)
+17. **save_location** - Save frequently used locations with aliases
+18. **list_saved_locations** - View all saved locations
+19. **get_saved_location** / **remove_saved_location** - Manage saved locations
 
 ## Development Guidelines
 
@@ -254,8 +266,9 @@ if (series.values.length > maxEntries) {
 
 ### No Hardcoded Secrets
 
-- No API keys required (all APIs are public)
-- Use environment variables for configuration
+- Earthcast API requires credentials via environment variables (ECT_API_USERNAME, ECT_API_PASSWORD)
+- Weather APIs (NOAA, Open-Meteo) require no authentication
+- Use environment variables for all configuration
 - Never commit `.env` files
 
 ## Configuration
@@ -263,6 +276,10 @@ if (series.values.length > maxEntries) {
 ### Environment Variables
 
 ```bash
+# Earthcast Technologies API (required for Earthcast tools)
+ECT_API_USERNAME=your_username
+ECT_API_PASSWORD=your_password
+
 # Cache Configuration
 CACHE_ENABLED=true              # Enable/disable caching (default: true)
 CACHE_MAX_SIZE=1000            # Max cache entries (100-10000, default: 1000)
@@ -272,6 +289,9 @@ API_TIMEOUT_MS=30000           # API timeout in milliseconds (5000-120000, defau
 
 # Logging
 LOG_LEVEL=1                    # 0=DEBUG, 1=INFO, 2=WARN, 3=ERROR (default: 1)
+
+# Tool Selection
+ENABLED_TOOLS=basic            # Tool preset (basic, standard, full, all)
 ```
 
 All environment variables are validated with bounds checking in `src/config/cache.ts`.

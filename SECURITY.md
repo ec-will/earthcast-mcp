@@ -6,18 +6,11 @@ We release patches for security vulnerabilities for the following versions:
 
 | Version | Supported          |
 | ------- | ------------------ |
-| 1.6.x   | :white_check_mark: |
-| 1.5.x   | :white_check_mark: |
-| 1.4.x   | :white_check_mark: |
-| 1.3.x   | :white_check_mark: |
-| 1.2.x   | :white_check_mark: |
-| 1.1.x   | :white_check_mark: |
-| 1.0.x   | :white_check_mark: |
-| < 1.0   | :x:                |
+| 0.1.x   | :white_check_mark: |
 
 ## Reporting a Vulnerability
 
-We take the security of the Weather MCP Server seriously. If you believe you have found a security vulnerability, please report it to us as described below.
+We take the security of Earthcast MCP seriously. If you believe you have found a security vulnerability, please report it to us as described below.
 
 ### Where to Report
 
@@ -25,7 +18,7 @@ We take the security of the Weather MCP Server seriously. If you believe you hav
 
 Instead, please report them via one of the following methods:
 
-1. **GitHub Security Advisory** (Preferred): Use the [GitHub Security Advisory](https://github.com/weather-mcp/weather-mcp/security/advisories/new) feature
+1. **GitHub Security Advisory** (Preferred): Use the [GitHub Security Advisory](https://github.com/ec-will/earthcast-mcp/security/advisories/new) feature
 2. **Email**: Send an email to the project maintainer via GitHub profile contact information
 3. **GitHub Issues**: For non-critical security concerns, you may open a regular issue with the `security` label
 
@@ -114,9 +107,12 @@ updates:
 
 ## Known Security Considerations
 
-### No Authentication Required
+### Authentication
 
-This MCP server uses public weather APIs (NOAA and Open-Meteo) that do not require API keys or authentication. This is by design and reduces security complexity.
+- **Earthcast Technologies API**: Requires username/password credentials via environment variables
+- **Weather APIs**: NOAA and Open-Meteo are public and require no authentication
+
+**Important:** Never commit credentials to version control. Use environment variables only.
 
 ### Data Privacy
 
@@ -153,18 +149,11 @@ This MCP server uses public weather APIs (NOAA and Open-Meteo) that do not requi
 
 ## Security Audit History
 
-- **2025-11-10**: Comprehensive security audit for v1.6.0 release (See SECURITY_AUDIT.md)
-  - Overall Security Posture: **A- (Excellent, 93/100)**
-  - Risk Level: **LOW**
-  - Zero critical or high-severity vulnerabilities
-  - 1,042 tests passing with 100% pass rate
-  - Code Quality: A+ (97.5/100)
-
-- **2025-11-06**: Initial comprehensive security audit for v1.5.0
-  - Overall Security Posture: **B+ (Good)**
-  - Risk Level: **LOW**
-  - Zero critical or high-severity vulnerabilities
-  - All recommended critical fixes implemented
+- **2026-01-21**: Initial security review for public release
+  - No credentials in codebase
+  - Environment variables for all secrets
+  - .gitignore properly configured
+  - 1,160+ tests passing
 
 ## Scope Exclusions
 
@@ -189,5 +178,5 @@ If you have questions about this security policy, please open a GitHub issue wit
 
 ---
 
-**Last Updated**: November 10, 2025
-**Next Security Review**: May 2026 (6 months) or upon major version release
+**Last Updated**: January 21, 2026
+**Next Security Review**: July 2026 (6 months) or upon major version release
