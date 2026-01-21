@@ -1,0 +1,8 @@
+blank_issues_enabled: true
+contact_links:
+  - name: Security Vulnerability
+    url: https://github.com/ec-will/earthcast-mcp/blob/main/SECURITY.md
+    about: Please report security vulnerabilities privately following our security policy
+  - name: Earthcast API Access
+    url: https://github.com/ec-will/earthcast-mcp#configuration
+    about: Information about obtaining Earthcast Technologies API credentials

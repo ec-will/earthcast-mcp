@@ -1,0 +1,62 @@
+name: Documentation Issue
+description: Report missing, unclear, or incorrect documentation
+labels: ["documentation", "needs-triage"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for helping improve our documentation!
+
+  - type: dropdown
+    id: type
+    attributes:
+      label: Documentation Issue Type
+      description: What kind of documentation issue is this?
+      options:
+        - Missing documentation
+        - Unclear or confusing
+        - Incorrect or outdated
+        - Typo or formatting
+        - Example needed
+        - Other
+    validations:
+      required: true
+
+  - type: textarea
+    id: location
+    attributes:
+      label: Location
+      description: Where is the documentation issue?
+      placeholder: |
+        Example: "README.md - Installation section for Warp"
+        Or: "WARP.md - Line 150"
+        Or: "Missing documentation for earthcast_vector_query tool"
+    validations:
+      required: true
+
+  - type: textarea
+    id: description
+    attributes:
+      label: Issue Description
+      description: What's wrong or missing?
+      placeholder: Describe the documentation issue in detail
+    validations:
+      required: true
+
+  - type: textarea
+    id: suggestion
+    attributes:
+      label: Suggested Improvement
+      description: How should this be fixed or improved?
+      placeholder: Provide your suggested changes or what information should be added
+    validations:
+      required: false
+
+  - type: textarea
+    id: additional
+    attributes:
+      label: Additional Context
+      description: Any other information that would be helpful
+      placeholder: Links, screenshots, or examples
+    validations:
+      required: false

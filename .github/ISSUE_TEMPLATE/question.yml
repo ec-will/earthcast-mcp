@@ -1,0 +1,72 @@
+name: Question
+description: Ask a question about using earthcast-mcp
+labels: ["question", "needs-triage"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Have a question about using earthcast-mcp? We're here to help!
+        
+        **Note:** If you've found a bug, please use the Bug Report template instead.
+
+  - type: textarea
+    id: question
+    attributes:
+      label: Your Question
+      description: What would you like to know?
+      placeholder: Ask your question here
+    validations:
+      required: true
+
+  - type: dropdown
+    id: category
+    attributes:
+      label: Question Category
+      description: What is your question about?
+      options:
+        - Installation and setup
+        - Configuration
+        - Using Earthcast API tools
+        - Using weather tools
+        - API credentials
+        - MCP client integration
+        - Performance or caching
+        - General usage
+        - Other
+    validations:
+      required: true
+
+  - type: textarea
+    id: context
+    attributes:
+      label: Context
+      description: What have you tried so far? What's your use case?
+      placeholder: Provide any relevant context or what you've already attempted
+    validations:
+      required: false
+
+  - type: dropdown
+    id: client
+    attributes:
+      label: MCP Client
+      description: Which MCP client are you using?
+      options:
+        - Claude Desktop
+        - Warp
+        - Cursor
+        - Cline (VS Code)
+        - Claude Code (CLI)
+        - Grok (xAI)
+        - Other
+        - Not applicable
+    validations:
+      required: false
+
+  - type: textarea
+    id: additional
+    attributes:
+      label: Additional Information
+      description: Any other details that might be helpful
+      placeholder: Configuration snippets, error messages, etc.
+    validations:
+      required: false
