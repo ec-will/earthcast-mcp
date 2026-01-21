@@ -81,7 +81,7 @@ Add to `~/.config/warp/mcp_settings.json` or configure via Warp UI:
       "env": {
         "ECT_API_USERNAME": "your_username",
         "ECT_API_PASSWORD": "your_password",
-        "ENABLED_TOOLS": "basic,+earthcast_query_data,+earthcast_gonogo_decision"
+        "ENABLED_TOOLS": "basic,+earthcast_query_data,+earthcast_gonogo_decision,+earthcast_vector_query,+earthcast_optical_depth"
       }
     }
   }
@@ -164,7 +164,7 @@ For xAI's Grok integration, add to your MCP configuration:
       "env": {
         "ECT_API_USERNAME": "your_username",
         "ECT_API_PASSWORD": "your_password",
-        "ENABLED_TOOLS": "basic,+earthcast_query_data,+earthcast_gonogo_decision"
+        "ENABLED_TOOLS": "basic,+earthcast_query_data,+earthcast_gonogo_decision,+earthcast_vector_query,+earthcast_optical_depth"
       }
     }
   }
@@ -214,11 +214,14 @@ Control which tools are available to reduce context overhead:
 # Basic weather tools only (default)
 ENABLED_TOOLS=basic
 
-# Basic + Earthcast tools
+# Basic + Earthcast tools (launch support)
 ENABLED_TOOLS=basic,+earthcast_query_data,+earthcast_gonogo_decision
 
-# All weather tools + Earthcast
-ENABLED_TOOLS=all,+earthcast_query_data,+earthcast_gonogo_decision
+# Basic + All Earthcast tools
+ENABLED_TOOLS=basic,+earthcast_query_data,+earthcast_gonogo_decision,+earthcast_vector_query,+earthcast_optical_depth
+
+# All weather tools + All Earthcast tools
+ENABLED_TOOLS=all,+earthcast_query_data,+earthcast_gonogo_decision,+earthcast_vector_query,+earthcast_optical_depth
 ```
 
 **Available presets:**
@@ -283,6 +286,38 @@ Get neutral atmospheric density at 400km altitude for coordinates 28.5, -80.5
 - `radius` - Query radius in km
 
 **Products:** `neutral_density`, `ionospheric_density`, `contrails_max`, `contrails`, `lightning_density`, `low-level-windshear`, `high-level-windshear`, `turbulence_max`, `reflectivity_5k`
+
+#### `earthcast_vector_query`
+Query weather data along an ordered vector path - ideal for orbital trajectories and satellite paths.
+
+**Example:**
+```
+Get neutral density along a satellite trajectory from 28.5, -80.5 through
+30.0, -78.0 to 32.0, -76.0 for drag calculations
+```
+
+**Parameters:**
+- `products` - One or more product keys (comma-separated)
+- `vectors` - Array of points defining the path, each with lat, lon, radius (km), and optional altitude
+- `date` - Optional ISO 8601 timestamp
+
+**Use Cases:** Spacecraft drag calculations, orbital mechanics, trajectory planning through the atmosphere
+
+#### `earthcast_optical_depth`
+Assess atmospheric optical depth along a line-of-sight for ground-based telescope operations.
+
+**Example:**
+```
+Evaluate viewing conditions from Mount Palomar Observatory (33.4, -116.9)
+to target at azimuth 180°, elevation 45°
+```
+
+**Parameters:**
+- `products` - One or more product keys (recommended: neutral_density, ionospheric_density, contrails)
+- `vectors` - Minimum 2 vectors: telescope location and target (with optional intermediate points)
+- `description` - Optional observation description
+
+**Use Cases:** Optical astronomy, telescope scheduling, atmospheric interference assessment
 
 ### Weather Tools (15 tools)
 

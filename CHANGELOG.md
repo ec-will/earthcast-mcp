@@ -25,6 +25,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Time range filtering and spatial filtering
   - Comprehensive data formatting with statistics
 
+- **`earthcast_vector_query`** - Weather data along orbital trajectories
+  - Query weather along ordered vector paths
+  - Ideal for satellite trajectories and spacecraft drag calculations
+  - Supports multiple altitude levels for 3D atmospheric sampling
+  - Orbital mechanics and trajectory planning support
+
+- **`earthcast_optical_depth`** - Atmospheric optical depth assessment
+  - Line-of-sight atmospheric interference evaluation
+  - Critical for ground-based telescope operations
+  - Visibility probability and optical depth metrics
+  - Supports optical astronomy and telescope scheduling
+
 #### New Weather Products
 - **Neutral Atmospheric Density** - Satellite drag calculations (100-1000km altitude)
 - **Ionospheric Density (VTEC)** - Space weather and GPS/radio propagation impacts
@@ -60,8 +72,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Technical Details
 - Built on earthcast-mcp v1.7.x foundation
-- Maintains all 15 original weather tools
-- 11 total tools when Earthcast tools enabled (9 basic + 2 Earthcast)
+- Maintains all 15 original weather tools + 4 saved location tools
+- 13 total tools when all Earthcast tools enabled (9 basic + 4 Earthcast)
 - Node.js >= 18.0.0 required
 - TypeScript 5.9.3
 - MCP SDK 1.21.1
@@ -84,12 +96,13 @@ ENABLED_TOOLS        # Tool selection (default: basic)
 
 This project is based on [earthcast-mcp](https://github.com/earthcast-mcp/earthcast-mcp) which provides the foundation with 15 weather tools:
 
-### Inherited Features
+### Inherited Features (from weather-mcp v1.7.x)
 - Global weather forecasts (NOAA + Open-Meteo)
 - Current weather conditions
 - Weather alerts (US)
 - Historical weather data (1940-present)
-- Location search and saved locations
+- Location search and geocoding
+- **Saved location management** (4 tools: save_location, list_saved_locations, get_saved_location, remove_saved_location)
 - Air quality monitoring
 - Marine conditions
 - Lightning detection
