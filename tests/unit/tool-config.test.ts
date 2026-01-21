@@ -79,32 +79,40 @@ describe('Tool Configuration', () => {
       const toolConfig = await createToolConfig('basic');
 
       const enabled = toolConfig.getEnabledTools();
-      expect(enabled).toHaveLength(5);
+      expect(enabled).toHaveLength(9); // 5 weather tools + 4 saved location tools
       expect(enabled).toContain('get_forecast');
       expect(enabled).toContain('get_current_conditions');
       expect(enabled).toContain('get_alerts');
       expect(enabled).toContain('search_location');
       expect(enabled).toContain('check_service_status');
+      expect(enabled).toContain('save_location');
+      expect(enabled).toContain('list_saved_locations');
+      expect(enabled).toContain('get_saved_location');
+      expect(enabled).toContain('remove_saved_location');
     });
 
     it('should load "standard" preset', async () => {
       const toolConfig = await createToolConfig('standard');
 
       const enabled = toolConfig.getEnabledTools();
-      expect(enabled).toHaveLength(6);
+      expect(enabled).toHaveLength(10); // 6 weather tools + 4 saved location tools
       expect(enabled).toContain('get_forecast');
       expect(enabled).toContain('get_current_conditions');
       expect(enabled).toContain('get_alerts');
       expect(enabled).toContain('get_historical_weather');
       expect(enabled).toContain('search_location');
       expect(enabled).toContain('check_service_status');
+      expect(enabled).toContain('save_location');
+      expect(enabled).toContain('list_saved_locations');
+      expect(enabled).toContain('get_saved_location');
+      expect(enabled).toContain('remove_saved_location');
     });
 
     it('should load "full" preset', async () => {
       const toolConfig = await createToolConfig('full');
 
       const enabled = toolConfig.getEnabledTools();
-      expect(enabled).toHaveLength(7);
+      expect(enabled).toHaveLength(11); // 7 weather tools + 4 saved location tools
       expect(enabled).toContain('get_forecast');
       expect(enabled).toContain('get_current_conditions');
       expect(enabled).toContain('get_alerts');
@@ -112,13 +120,17 @@ describe('Tool Configuration', () => {
       expect(enabled).toContain('search_location');
       expect(enabled).toContain('check_service_status');
       expect(enabled).toContain('get_air_quality');
+      expect(enabled).toContain('save_location');
+      expect(enabled).toContain('list_saved_locations');
+      expect(enabled).toContain('get_saved_location');
+      expect(enabled).toContain('remove_saved_location');
     });
 
     it('should load "all" preset', async () => {
       const toolConfig = await createToolConfig('all');
 
       const enabled = toolConfig.getEnabledTools();
-      expect(enabled).toHaveLength(12); // Updated for v1.6.0: added get_river_conditions and get_wildfire_info
+      expect(enabled).toHaveLength(16); // 12 weather tools + 4 saved location tools
       expect(enabled).toContain('get_forecast');
       expect(enabled).toContain('get_current_conditions');
       expect(enabled).toContain('get_alerts');
@@ -131,6 +143,10 @@ describe('Tool Configuration', () => {
       expect(enabled).toContain('get_lightning_activity');
       expect(enabled).toContain('get_river_conditions');
       expect(enabled).toContain('get_wildfire_info');
+      expect(enabled).toContain('save_location');
+      expect(enabled).toContain('list_saved_locations');
+      expect(enabled).toContain('get_saved_location');
+      expect(enabled).toContain('remove_saved_location');
     });
   });
 
@@ -207,7 +223,7 @@ describe('Tool Configuration', () => {
       const toolConfig = await createToolConfig('all,-get_marine_conditions');
 
       const enabled = toolConfig.getEnabledTools();
-      expect(enabled).toHaveLength(11); // Updated for v1.6.0: 12 total tools - 1 removed = 11
+      expect(enabled).toHaveLength(15); // 16 total tools - 1 removed = 15
       expect(enabled).not.toContain('get_marine_conditions');
       expect(enabled).toContain('get_forecast');
       expect(enabled).toContain('get_air_quality');
